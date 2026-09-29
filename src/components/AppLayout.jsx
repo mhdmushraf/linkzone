@@ -27,7 +27,7 @@ import { format } from "date-fns";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 const NAV = [
-  { to: "/", label: "Dashboard", subtitle: "Your sales at a glance", icon: LayoutDashboard },
+  { to: "/dashboard", label: "Dashboard", subtitle: "Your sales at a glance", icon: LayoutDashboard },
   { to: "/inbox", label: "Inbox", subtitle: "WhatsApp conversations with your customers", icon: MessageCircle },
   { to: "/customers", label: "Customers", subtitle: "Manage your shops and routes", icon: Users },
   { to: "/products", label: "Products", subtitle: "Your catalog of products and offers", icon: Package },
@@ -39,7 +39,7 @@ const NAV = [
 ];
 
 const MOBILE_TABS = [
-  { to: "/", label: "Home", icon: HomeIcon },
+  { to: "/dashboard", label: "Home", icon: HomeIcon },
   { to: "/customers", label: "Customers", icon: Users },
   { to: "/inbox", label: "Inbox", icon: MessageCircle },
   { to: "/orders", label: "Orders", icon: ShoppingCart },
@@ -60,7 +60,7 @@ export default function AppLayout({ children }) {
     navigate("/login");
   };
 
-  const current = NAV.find((n) => (n.to === "/" ? location.pathname === "/" : location.pathname.startsWith(n.to))) || NAV[0];
+  const current = NAV.find((n) => (n.to === "/dashboard" ? location.pathname === "/dashboard" : location.pathname.startsWith(n.to))) || NAV[0];
 
   const initials = (user?.data?.name || user?.email || "?")
     .split(" ")
@@ -87,7 +87,7 @@ export default function AppLayout({ children }) {
           <NavLink
             key={item.to}
             to={item.to}
-            end={item.to === "/"}
+            end={item.to === "/dashboard"}
             onClick={() => setMobileOpen(false)}
             className={({ isActive }) =>
               cn(
@@ -224,7 +224,7 @@ export default function AppLayout({ children }) {
           <NavLink
             key={tab.to}
             to={tab.to}
-            end={tab.to === "/"}
+            end={tab.to === "/dashboard"}
             className={({ isActive }) =>
               cn(
                 "flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg text-[10px] font-600 transition-colors flex-1",

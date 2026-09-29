@@ -17,6 +17,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const returnTo = safeReturnTo();
+  const dest = returnTo === "/" ? "/dashboard" : returnTo;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,7 +25,7 @@ export default function Login() {
     setLoading(true);
     try {
       await base44.auth.loginViaEmailPassword(email, password);
-      window.location.href = returnTo;
+      window.location.href = dest;
     } catch (err) {
       setError(err.message || "Invalid email or password");
     } finally {
@@ -33,7 +34,7 @@ export default function Login() {
   };
 
   const handleGoogle = () => {
-    base44.auth.loginWithProvider("google", returnTo);
+    base44.auth.loginWithProvider("google", dest);
   };
 
   return (

@@ -15,6 +15,7 @@ import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 // App pages
+import Landing from '@/pages/Landing';
 import Onboarding from '@/pages/Onboarding';
 import Dashboard from '@/pages/Dashboard';
 import Customers from '@/pages/Customers';
@@ -58,10 +59,11 @@ const AuthenticatedApp = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/" element={<Landing />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/onboarding" element={<Onboarding />} />
         <Route element={<OrgShell />}>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/lead-finder" element={<LeadFinder />} />
           <Route path="/products" element={<Products />} />

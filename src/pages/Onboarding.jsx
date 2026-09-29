@@ -123,7 +123,7 @@ export default function Onboarding() {
       localStorage.removeItem("lz_name");
       localStorage.removeItem("lz_company");
       toast({ title: "Welcome to Linkzone", description: "Your 14-day trial has started." });
-      window.location.href = "/";
+      window.location.href = "/dashboard";
     } catch (e) {
       toast({ title: "Payment setup failed", description: e.message, variant: "destructive" });
       setSubmitting(false);
