@@ -4,12 +4,14 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserPlus, Mail, Lock, Loader2, User, Building2 } from "lucide-react";
+import { Mail, Lock, Loader2, User, Building2 } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "@/components/ui/use-toast";
 import { safeReturnTo } from "@/lib/authReturnTo";
+
+const inputCls = "h-12 rounded-[10px] bg-white border-border";
 
 export default function Register() {
   const [name, setName] = useState("");
@@ -62,10 +64,7 @@ export default function Register() {
     setError("");
     try {
       await base44.auth.resendOtp(email);
-      toast({
-        title: "Code sent",
-        description: "Check your email for the new code.",
-      });
+      toast({ title: "Code sent", description: "Check your email for the new code." });
     } catch (err) {
       setError(err.message || "Failed to resend code");
     }
@@ -77,13 +76,9 @@ export default function Register() {
 
   if (showOtp) {
     return (
-      <AuthLayout
-        icon={Mail}
-        title="Verify your email"
-        subtitle={`We sent a code to ${email}`}
-      >
+      <AuthLayout title="Verify your email" subtitle={`We sent a code to ${email}`}>
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+          <div className="mb-4 p-3 rounded-[10px] bg-destructive/10 text-destructive text-sm font-500">
             {error}
           </div>
         )}
@@ -106,7 +101,7 @@ export default function Register() {
           </InputOTP>
         </div>
         <Button
-          className="w-full h-12 font-medium"
+          className="w-full h-12 font-600 rounded-[10px]"
           onClick={handleVerify}
           disabled={loading || otpCode.length < 6}
         >
@@ -121,7 +116,7 @@ export default function Register() {
         </Button>
         <p className="text-center text-sm text-muted-foreground mt-4">
           Didn't receive the code?{" "}
-          <button onClick={handleResend} className="text-primary font-medium hover:underline">
+          <button onClick={handleResend} className="text-primary font-600 hover:underline">
             Resend
           </button>
         </p>
@@ -131,15 +126,14 @@ export default function Register() {
 
   return (
     <AuthLayout
-      icon={UserPlus}
       title="Create your account"
-      subtitle="Sign up to get started"
+      subtitle="Start your 14-day free trial — no card required today"
       footer={
         <>
           Already have an account?{" "}
           <Link
             to={"/login" + (safeReturnTo() !== "/" ? "?returnTo=" + encodeURIComponent(safeReturnTo()) : "")}
-            className="text-primary font-medium hover:underline"
+            className="text-primary font-600 hover:underline"
           >
             Log in
           </Link>
@@ -148,33 +142,33 @@ export default function Register() {
     >
       <Button
         variant="outline"
-        className="w-full h-12 text-sm font-medium mb-6"
+        className="w-full h-12 text-sm font-600 mb-5 rounded-[10px] bg-white"
         onClick={handleGoogle}
       >
         <GoogleIcon className="w-5 h-5 mr-2" />
         Continue with Google
       </Button>
 
-      <div className="relative mb-6">
+      <div className="relative mb-5">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-border" />
         </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-3 text-muted-foreground">or</span>
+        <div className="relative flex justify-center text-xs">
+          <span className="bg-background px-3 text-muted-foreground font-500">or</span>
         </div>
       </div>
 
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+        <div className="mb-4 p-3 rounded-[10px] bg-destructive/10 text-destructive text-sm font-500">
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="name">Full name</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="name" className="font-600">Full name</Label>
           <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-faint" aria-hidden="true" />
             <Input
               id="name"
               type="text"
@@ -182,30 +176,30 @@ export default function Register() {
               placeholder="Jane Doe"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="pl-10 h-12"
+              className={`pl-10 ${inputCls}`}
               required
             />
           </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="company">Company name</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="company" className="font-600">Company name</Label>
           <div className="relative">
-            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-faint" aria-hidden="true" />
             <Input
               id="company"
               type="text"
               placeholder="Acme Distribution Ltd"
               value={company}
               onChange={(e) => setCompany(e.target.value)}
-              className="pl-10 h-12"
+              className={`pl-10 ${inputCls}`}
               required
             />
           </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="email">Work email</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="email" className="font-600">Work email</Label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-faint" aria-hidden="true" />
             <Input
               id="email"
               type="email"
@@ -214,44 +208,46 @@ export default function Register() {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 h-12"
+              className={`pl-10 ${inputCls}`}
               required
             />
           </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-            <Input
-              id="password"
-              type="password"
-              autoComplete="new-password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="pl-10 h-12"
-              required
-            />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="password" className="font-600">Password</Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-faint" aria-hidden="true" />
+              <Input
+                id="password"
+                type="password"
+                autoComplete="new-password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={`pl-10 ${inputCls}`}
+                required
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="confirm" className="font-600">Confirm</Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-faint" aria-hidden="true" />
+              <Input
+                id="confirm"
+                type="password"
+                autoComplete="new-password"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className={`pl-10 ${inputCls}`}
+                required
+              />
+            </div>
           </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="confirm">Confirm Password</Label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-            <Input
-              id="confirm"
-              type="password"
-              autoComplete="new-password"
-              placeholder="••••••••"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="pl-10 h-12"
-              required
-            />
-          </div>
-        </div>
-        <Button type="submit" className="w-full h-12 font-medium" disabled={loading}>
+        <Button type="submit" className="w-full h-12 font-600 rounded-[10px]" disabled={loading}>
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />

@@ -2,22 +2,22 @@ import React from "react";
 import { cn } from "@/lib/utils";
 
 const STYLES = {
-  active: "bg-emerald-100 text-emerald-700",
-  to_reorder: "bg-amber-100 text-amber-700",
-  new: "bg-violet-100 text-violet-700",
-  win_back: "bg-blue-100 text-blue-700",
-  paid: "bg-emerald-100 text-emerald-700",
-  due: "bg-rose-100 text-rose-700",
-  partial: "bg-amber-100 text-amber-700",
-  pending: "bg-slate-100 text-slate-600",
-  dispatched: "bg-blue-100 text-blue-700",
-  delivered: "bg-emerald-100 text-emerald-700",
+  active: "bg-success-muted text-success",
+  to_reorder: "bg-warning-muted text-warning",
+  new: "bg-tint text-primary",
+  win_back: "bg-accent/10 text-accent",
+  paid: "bg-success-muted text-success",
+  due: "bg-destructive/10 text-destructive",
+  partial: "bg-warning-muted text-warning",
+  pending: "bg-muted text-faint",
+  dispatched: "bg-accent/10 text-accent",
+  delivered: "bg-success-muted text-success",
   trial: "bg-accent/10 text-accent",
-  accepted: "bg-emerald-100 text-emerald-700",
-  owner: "bg-primary/10 text-primary",
-  manager: "bg-violet-100 text-violet-700",
-  sales: "bg-blue-100 text-blue-700",
-  viewer: "bg-slate-100 text-slate-600",
+  accepted: "bg-success-muted text-success",
+  owner: "bg-primary text-white",
+  manager: "bg-tint text-primary",
+  sales: "bg-accent/10 text-accent",
+  viewer: "bg-muted text-faint",
 };
 
 const LABELS = {
@@ -40,10 +40,10 @@ const LABELS = {
 };
 
 export default function StatusBadge({ status }) {
-  const style = STYLES[status] || "bg-slate-100 text-slate-600";
+  const style = STYLES[status] || "bg-muted text-faint";
   const label = LABELS[status] || status;
   return (
-    <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-600 capitalize", style)}>
+    <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-600", style)}>
       <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
       {label}
     </span>

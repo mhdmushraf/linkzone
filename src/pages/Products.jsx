@@ -98,18 +98,16 @@ export default function Products() {
   return (
     <AppLayout>
       <PageHeader
-        title="Products"
-        subtitle="Your catalog of products and offers"
         action={
-          <Button onClick={openNew} className="h-11">
+          <Button onClick={openNew} className="h-11 rounded-[10px] font-600">
             <Plus className="w-4 h-4 mr-2" /> Add product
           </Button>
         }
       />
 
       <div className="relative mb-5 max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input placeholder="Search products…" value={query} onChange={(e) => setQuery(e.target.value)} className="pl-10 h-10" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-faint" />
+        <Input placeholder="Search products…" value={query} onChange={(e) => setQuery(e.target.value)} className="pl-10 h-10 rounded-[10px] bg-card" />
       </div>
 
       {loading ? (
@@ -119,33 +117,33 @@ export default function Products() {
           icon={Package}
           title="No products yet"
           description="Add your first product to start sending offers to shops."
-          action={<Button onClick={openNew}><Plus className="w-4 h-4 mr-2" /> Add product</Button>}
+          action={<Button onClick={openNew} className="rounded-[10px]"><Plus className="w-4 h-4 mr-2" /> Add product</Button>}
         />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {filtered.map((p) => (
-            <div key={p.id} className="bg-card rounded-2xl border border-border/60 shadow-sm overflow-hidden group">
-              <div className="aspect-square bg-muted relative">
+            <div key={p.id} className="bg-card rounded-2xl border border-border overflow-hidden group">
+              <div className="aspect-square relative bg-gradient-to-br from-tint to-[hsl(var(--chart-lavender))]">
                 {p.data.photo_url ? (
                   <Image src={p.data.photo_url} alt={p.data.name} className="w-full h-full" fittingType="fill" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <Package className="w-10 h-10 text-muted-foreground/40" />
+                    <Package className="w-10 h-10 text-primary/30" />
                   </div>
                 )}
                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => openEdit(p)} className="w-8 h-8 rounded-lg bg-background/90 shadow flex items-center justify-center hover:bg-background">
+                  <button onClick={() => openEdit(p)} className="w-8 h-8 rounded-lg bg-white/90 shadow flex items-center justify-center hover:bg-white">
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => remove(p)} className="w-8 h-8 rounded-lg bg-background/90 shadow flex items-center justify-center hover:bg-background text-rose-500">
+                  <button onClick={() => remove(p)} className="w-8 h-8 rounded-lg bg-white/90 shadow flex items-center justify-center hover:bg-white text-destructive">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
               <div className="p-3">
                 <p className="font-600 text-sm truncate">{p.data.name}</p>
-                <p className="text-xs text-muted-foreground truncate">{p.data.pack_unit || "—"}</p>
-                <p className="font-700 font-heading mt-1">${p.data.price}</p>
+                <p className="text-xs text-faint truncate mb-1">{p.data.pack_unit || "—"}</p>
+                <p className="font-extrabold font-display text-base" style={{ letterSpacing: "-0.02em" }}>AED {p.data.price}</p>
               </div>
             </div>
           ))}
@@ -168,7 +166,7 @@ export default function Products() {
                 <Input value={form.pack_unit} onChange={(e) => setForm({ ...form, pack_unit: e.target.value })} placeholder="Case of 24" />
               </div>
               <div className="space-y-2">
-                <Label>Price ($)</Label>
+                <Label>Price (AED)</Label>
                 <Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="12.50" />
               </div>
             </div>

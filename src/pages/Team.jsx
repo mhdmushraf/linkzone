@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { UserCog, Plus, Loader2, Mail, Clock } from "lucide-react";
+import { UserCog, Plus, Loader2, Mail, Clock, Route as RouteIcon } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 
 const ROLES = ["manager", "sales", "viewer"];
@@ -20,6 +20,7 @@ export default function Team() {
   const orgId = organization?.id;
   const canManage = appRole === "owner" || appRole === "manager";
   const [routes, setRoutes] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [invites, setInvites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -29,11 +30,13 @@ export default function Team() {
   const load = async () => {
     if (!orgId) return;
     setLoading(true);
-    const [r, inv] = await Promise.all([
+    const [r, c, inv] = await Promise.all([
       base44.entities.Route.filter({ organization_id: orgId }, "-created_date", 500),
+      base44.entities.Customer.filter({ organization_id: orgId }, "-created_date", 500),
       base44.entities.TeamInvite.filter({ organization_id: orgId }, "-created_date", 100),
     ]);
     setRoutes(r);
+    setCustomers(c);
     setInvites(inv.filter((i) => i.data.status === "pending"));
     setLoading(false);
   };
@@ -77,6 +80,19 @@ export default function Team() {
     }));
   };
 
+  const assignRoute = async (routeId, memberId) => {
+    try {
+      await base44.entities.Route.update(routeId, { assigned_to: memberId });
+      toast({ title: "Route assigned" });
+      load();
+      refresh();
+    } catch (e) {
+      toast({ title: "Failed", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const shopCount = (routeId) => customers.filter((c) => c.data.route_id === routeId).length;
+
   if (loading) {
     return (
       <AppLayout>
@@ -88,63 +104,87 @@ export default function Team() {
   return (
     <AppLayout>
       <PageHeader
-        title="Team"
-        subtitle="Invite teammates and assign roles"
-        action={canManage && <Button onClick={() => setOpen(true)} className="h-11"><Plus className="w-4 h-4 mr-2" /> Invite member</Button>}
+        action={canManage && <Button onClick={() => setOpen(true)} className="h-11 rounded-[10px] font-600"><Plus className="w-4 h-4 mr-2" /> Invite member</Button>}
       />
 
-      <div className="grid lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 bg-card rounded-2xl border border-border/60 shadow-sm overflow-hidden">
-          <div className="px-5 py-3 border-b border-border bg-muted/30">
-            <h3 className="font-600 text-sm">Members ({team.length})</h3>
-          </div>
-          {team.length === 0 ? (
-            <EmptyState icon={UserCog} title="No members yet" description="Invite your first teammate." />
-          ) : (
-            <div className="divide-y divide-border/50">
-              {team.map((t) => (
-                <div key={t.id} className="flex items-center gap-3 px-5 py-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-600 shrink-0">
-                    {(t.data?.name || t.email || "?")[0]?.toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-600 text-sm truncate">{t.data?.name || t.email}</p>
-                    <p className="text-xs text-muted-foreground truncate">{t.email}</p>
-                  </div>
-                  <StatusBadge status={t.data?.app_role || "viewer"} />
-                  {t.id === user.id && <span className="text-xs text-muted-foreground">You</span>}
-                </div>
-              ))}
-            </div>
-          )}
+      <div className="bg-card rounded-2xl border border-border overflow-hidden">
+        <div className="px-5 py-3 border-b border-border">
+          <h3 className="font-700 font-display text-sm" style={{ letterSpacing: "-0.02em" }}>Members ({team.length})</h3>
         </div>
-
-        <div className="bg-card rounded-2xl border border-border/60 shadow-sm overflow-hidden">
-          <div className="px-5 py-3 border-b border-border bg-muted/30">
-            <h3 className="font-600 text-sm flex items-center gap-2"><Clock className="w-4 h-4" /> Pending ({invites.length})</h3>
-          </div>
-          {invites.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-10 px-4">No pending invitations.</p>
-          ) : (
-            <div className="divide-y divide-border/50">
-              {invites.map((inv) => (
-                <div key={inv.id} className="flex items-center gap-3 px-5 py-3">
-                  <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
-                    <Mail className="w-4 h-4 text-muted-foreground" />
+        {team.length === 0 ? (
+          <EmptyState icon={UserCog} title="No members yet" description="Invite your first teammate." />
+        ) : (
+          <div className="divide-y divide-border/50">
+            {team.map((t) => {
+              const myRoutes = routes.filter((r) => r.data.assigned_to === t.id);
+              return (
+                <div key={t.id} className="flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-4">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-tint text-primary flex items-center justify-center text-sm font-700 shrink-0">
+                      {(t.data?.name || t.email || "?")[0]?.toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-600 text-sm truncate">{t.data?.name || t.email}{t.id === user.id && <span className="text-faint font-500"> (You)</span>}</p>
+                      <p className="text-xs text-faint truncate">{t.email}</p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-600 truncate">{inv.data.email}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{inv.data.app_role}</p>
+                  <div className="flex items-center gap-2 flex-wrap sm:justify-end">
+                    <StatusBadge status={t.data?.app_role || "viewer"} />
+                    {myRoutes.length > 0 ? (
+                      myRoutes.map((r) => (
+                        <span key={r.id} className="inline-flex items-center gap-1.5 bg-primary text-white text-xs font-600 px-2.5 py-1 rounded-full">
+                          <RouteIcon className="w-3 h-3" />
+                          {r.data.name}
+                          <span className="bg-white/20 px-1.5 rounded-full">{shopCount(r.id)}</span>
+                        </span>
+                      ))
+                    ) : (
+                      canManage && routes.length > 0 && (
+                        <Select onValueChange={(v) => assignRoute(v, t.id)}>
+                          <SelectTrigger className="h-8 w-auto gap-1 rounded-full border-dashed text-xs font-600 text-faint px-3 min-w-[140px]">
+                            <SelectValue placeholder="+ Assign a route" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {routes.map((r) => (
+                              <SelectItem key={r.id} value={r.id}>{r.data.name} · {shopCount(r.id)} shops</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )
+                    )}
                   </div>
-                  {canManage && (
-                    <button onClick={() => cancelInvite(inv)} className="text-xs text-rose-500 hover:underline">Cancel</button>
-                  )}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
+
+      {invites.length > 0 && (
+        <div className="bg-card rounded-2xl border border-border overflow-hidden mt-4">
+          <div className="px-5 py-3 border-b border-border">
+            <h3 className="font-700 font-display text-sm flex items-center gap-2" style={{ letterSpacing: "-0.02em" }}>
+              <Clock className="w-4 h-4" /> Pending ({invites.length})
+            </h3>
+          </div>
+          <div className="divide-y divide-border/50">
+            {invites.map((inv) => (
+              <div key={inv.id} className="flex items-center gap-3 px-5 py-3">
+                <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+                  <Mail className="w-4 h-4 text-faint" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-600 truncate">{inv.data.email}</p>
+                  <p className="text-xs text-faint capitalize">{inv.data.app_role}</p>
+                </div>
+                {canManage && (
+                  <button onClick={() => cancelInvite(inv)} className="text-xs text-destructive hover:underline font-600">Cancel</button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
@@ -168,7 +208,7 @@ export default function Team() {
                 <Label>Assigned routes</Label>
                 <div className="space-y-1.5 max-h-40 overflow-y-auto">
                   {routes.map((r) => (
-                    <label key={r.id} className="flex items-center gap-2 p-2 rounded-lg border border-border cursor-pointer hover:bg-muted/40">
+                    <label key={r.id} className="flex items-center gap-2 p-2 rounded-lg border border-border cursor-pointer hover:bg-tint">
                       <input
                         type="checkbox"
                         checked={form.route_ids.includes(r.id)}
@@ -176,7 +216,7 @@ export default function Team() {
                         className="rounded accent-[hsl(var(--primary))]"
                       />
                       <span className="text-sm">{r.data.name}</span>
-                      <span className="text-xs text-muted-foreground ml-auto">{r.data.area}</span>
+                      <span className="text-xs text-faint ml-auto">{r.data.area}</span>
                     </label>
                   ))}
                 </div>
