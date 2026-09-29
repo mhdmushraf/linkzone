@@ -52,6 +52,12 @@
       ],
       "default": "manual"
     },
+    "lat": {
+      "type": "number"
+    },
+    "lng": {
+      "type": "number"
+    },
     "organization_id": {
       "type": "string"
     }
