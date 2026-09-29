@@ -8,6 +8,7 @@ export const FAQS = [
   { q: "Can I export my data?", a: "Yes. You can export your own customers, orders and products at any time. Lead-finder results are not exportable." },
   { q: "What happens if I cancel?", a: "Your workspace stays read-only for 30 days so you can export your data, after which it is archived." },
   { q: "Is my data separate from other companies?", a: "Yes. Every company gets its own isolated workspace — your customers, orders and conversations are never shared with anyone else." },
+  { q: "Can I see customers on a map?", a: "Yes. Lead Finder and Customers both have a map view with filters, so you can find shops around any area and assign them to a route." },
 ];
 
 export default function FAQ() {

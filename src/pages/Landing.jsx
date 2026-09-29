@@ -1,6 +1,7 @@
 import React from "react";
 import LandingNav from "@/components/landing/LandingNav";
 import Hero from "@/components/landing/Hero";
+import MapDemo from "@/components/landing/MapDemo";
 import HowItWorks from "@/components/landing/HowItWorks";
 import Features from "@/components/landing/Features";
 import WorksFor from "@/components/landing/WorksFor";
@@ -15,6 +16,7 @@ export default function Landing() {
       <LandingNav />
       <main>
         <Hero />
+        <MapDemo />
         <HowItWorks />
         <Features />
         <WorksFor />

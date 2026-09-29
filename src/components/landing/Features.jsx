@@ -1,11 +1,12 @@
 import React from "react";
-import { Search, MessageCircle, Package, Route, BellRing, ShieldCheck } from "lucide-react";
+import { Search, MessageCircle, Package, Route, BellRing, ShieldCheck, MapPin } from "lucide-react";
 
 const FEATURES = [
   { icon: Search, title: "Lead Finder by area and industry", body: "Find new retailers in any area, filtered by the trade you serve." },
   { icon: MessageCircle, title: "Two-way WhatsApp inbox", body: "Every conversation in one place — reply, share offers, and stay in context." },
   { icon: Package, title: "Product catalogue and offers", body: "Build a catalogue and send product cards straight into the chat." },
   { icon: Route, title: "Routes and salesman assignment", body: "Assign every route to the right rep so the right shops get the right offers." },
+  { icon: MapPin, title: "Interactive map of shops and customers", body: "See every shop and customer on a map, filter by area and industry, and assign routes visually." },
   { icon: BellRing, title: "Orders and reorder reminders", body: "Turn replies into tracked orders and remind shops when it's time to reorder." },
   { icon: ShieldCheck, title: "Separate secure workspace per company", body: "Every company gets its own isolated workspace — your data is yours alone." },
 ];
