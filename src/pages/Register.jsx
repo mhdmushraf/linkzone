@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, Lock, Loader2, User, Building2 } from "lucide-react";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { Mail, Lock, Loader2, User, Building2, Check } from "lucide-react";
+import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "@/components/ui/input-otp";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "@/components/ui/use-toast";
@@ -23,6 +23,15 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
+  const [otpState, setOtpState] = useState("default"); // "default" | "error" | "success"
+  const [shakeKey, setShakeKey] = useState(0);
+  const [resendIn, setResendIn] = useState(30);
+
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = setTimeout(() => setResendIn((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,6 +45,9 @@ export default function Register() {
       localStorage.setItem("lz_name", name);
       localStorage.setItem("lz_company", company);
       await base44.auth.register({ email, password });
+      setOtpCode("");
+      setOtpState("default");
+      setResendIn(30);
       setShowOtp(true);
     } catch (err) {
       setError(err.message || "Registration failed");
@@ -44,30 +56,55 @@ export default function Register() {
     }
   };
 
-  const handleVerify = async () => {
+  const doVerify = async (code) => {
+    const value = (code ?? otpCode).replace(/\D/g, "");
+    if (value.length < 6) return;
     setError("");
+    setOtpState("default");
     setLoading(true);
     try {
-      const result = await base44.auth.verifyOtp({ email, otpCode });
+      const result = await base44.auth.verifyOtp({ email, otpCode: value });
+      setOtpState("success");
       if (result?.access_token) {
         base44.auth.setToken(result.access_token);
       }
-      window.location.href = "/onboarding";
+      setTimeout(() => {
+        window.location.href = "/onboarding";
+      }, 750);
     } catch (err) {
-      setError(err.message || "Invalid verification code");
+      setOtpState("error");
+      setShakeKey((k) => k + 1);
     } finally {
       setLoading(false);
     }
   };
 
+  const onOtpChange = (val) => {
+    const cleaned = (val || "").replace(/\D/g, "").slice(0, 6);
+    setOtpCode(cleaned);
+    if (otpState === "error") setOtpState("default");
+    if (cleaned.length === 6 && !loading && otpState !== "success") {
+      doVerify(cleaned);
+    }
+  };
+
   const handleResend = async () => {
+    if (resendIn > 0) return;
     setError("");
     try {
       await base44.auth.resendOtp(email);
+      setResendIn(30);
       toast({ title: "Code sent", description: "Check your email for the new code." });
     } catch (err) {
       setError(err.message || "Failed to resend code");
     }
+  };
+
+  const handleChangeEmail = () => {
+    setShowOtp(false);
+    setOtpCode("");
+    setOtpState("default");
+    setError("");
   };
 
   const handleGoogle = () => {
@@ -76,36 +113,60 @@ export default function Register() {
 
   if (showOtp) {
     return (
-      <AuthLayout title="Verify your email" subtitle={`We sent a code to ${email}`}>
-        {error && (
+      <AuthLayout
+        icon={
+          <div className="w-12 h-12 rounded-full bg-tint flex items-center justify-center">
+            <Mail className="w-5 h-5 text-primary" strokeWidth={2.5} />
+          </div>
+        }
+        title="Verify your email"
+        subtitle={`We sent a code to ${email}`}
+      >
+        {error && otpState !== "error" && (
           <div className="mb-4 p-3 rounded-[10px] bg-destructive/10 text-destructive text-sm font-500">
             {error}
           </div>
         )}
+        {otpState === "error" && (
+          <p className="mb-4 text-sm font-600 text-destructive">That code isn't right. Try again.</p>
+        )}
+
         <div className="flex justify-center mb-6">
-          <InputOTP
-            maxLength={6}
-            value={otpCode}
-            onChange={setOtpCode}
-            autoFocus
-            autoComplete="one-time-code"
-          >
-            <InputOTPGroup>
-              <InputOTPSlot index={0} />
-              <InputOTPSlot index={1} />
-              <InputOTPSlot index={2} />
-              <InputOTPSlot index={3} />
-              <InputOTPSlot index={4} />
-              <InputOTPSlot index={5} />
-            </InputOTPGroup>
-          </InputOTP>
+          <div key={shakeKey} className={otpState === "error" ? "animate-otp-shake" : ""}>
+            <InputOTP
+              maxLength={6}
+              value={otpCode}
+              onChange={onOtpChange}
+              autoFocus
+              autoComplete="one-time-code"
+              inputMode="numeric"
+              pattern="\d*"
+              disabled={loading || otpState === "success"}
+            >
+              <InputOTPGroup>
+                <InputOTPSlot index={0} state={otpState} />
+                <InputOTPSlot index={1} state={otpState} />
+                <InputOTPSlot index={2} state={otpState} />
+                <InputOTPSeparator />
+                <InputOTPSlot index={3} state={otpState} />
+                <InputOTPSlot index={4} state={otpState} />
+                <InputOTPSlot index={5} state={otpState} />
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
         </div>
+
         <Button
-          className="w-full h-12 font-600 rounded-[10px]"
-          onClick={handleVerify}
-          disabled={loading || otpCode.length < 6}
+          className="w-full h-12 font-600 rounded-xl"
+          onClick={() => doVerify()}
+          disabled={loading || otpCode.length < 6 || otpState === "success"}
         >
-          {loading ? (
+          {otpState === "success" ? (
+            <>
+              <Check className="w-4 h-4 mr-2" />
+              Verified
+            </>
+          ) : loading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               Verifying...
@@ -114,12 +175,25 @@ export default function Register() {
             "Verify"
           )}
         </Button>
+
         <p className="text-center text-sm text-muted-foreground mt-4">
           Didn't receive the code?{" "}
-          <button onClick={handleResend} className="text-primary font-600 hover:underline">
-            Resend
-          </button>
+          {resendIn > 0 ? (
+            <span className="text-faint font-500">Resend in {resendIn}s</span>
+          ) : (
+            <button onClick={handleResend} className="text-primary font-600 hover:underline">
+              Resend
+            </button>
+          )}
         </p>
+
+        <button
+          type="button"
+          onClick={handleChangeEmail}
+          className="mt-3 block w-full text-center text-sm text-faint hover:text-foreground underline underline-offset-2"
+        >
+          Wrong email? Change it
+        </button>
       </AuthLayout>
     );
   }

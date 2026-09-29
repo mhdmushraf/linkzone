@@ -101,11 +101,32 @@ module.exports = {
   			'accordion-up': {
   				from: { height: 'var(--radix-accordion-content-height)' },
   				to: { height: '0' }
+  			},
+  			'caret-blink': {
+  				'0%, 100%': { opacity: '1' },
+  				'50%': { opacity: '0' }
+  			},
+  			'otp-shake': {
+  				'0%, 100%': { transform: 'translateX(0)' },
+  				'15%': { transform: 'translateX(-5px)' },
+  				'30%': { transform: 'translateX(5px)' },
+  				'45%': { transform: 'translateX(-4px)' },
+  				'60%': { transform: 'translateX(4px)' },
+  				'75%': { transform: 'translateX(-2px)' },
+  				'90%': { transform: 'translateX(2px)' }
+  			},
+  			'otp-success': {
+  				'0%': { transform: 'scale(0.96)' },
+  				'50%': { transform: 'scale(1.05)' },
+  				'100%': { transform: 'scale(1)' }
   			}
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
+  			'accordion-up': 'accordion-up 0.2s ease-out',
+  			'caret-blink': 'caret-blink 1s ease-in-out infinite',
+  			'otp-shake': 'otp-shake 0.45s ease-in-out',
+  			'otp-success': 'otp-success 0.35s ease-out'
   		}
   	}
   },

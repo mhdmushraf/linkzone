@@ -37,7 +37,7 @@ export function AuthSidePanel() {
   );
 }
 
-export default function AuthLayout({ title, subtitle, footer, children }) {
+export default function AuthLayout({ title, subtitle, footer, icon, children }) {
   return (
     <div className="min-h-screen flex bg-background">
       <AuthSidePanel />
@@ -46,6 +46,9 @@ export default function AuthLayout({ title, subtitle, footer, children }) {
           <div className="lg:hidden mb-8">
             <Logo size={36} />
           </div>
+          {icon && React.isValidElement(icon) && (
+            <div className="mb-5">{icon}</div>
+          )}
           {title && (
             <h1
               className="font-display font-extrabold text-[2rem] leading-tight tracking-tight text-foreground"
