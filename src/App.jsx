@@ -33,25 +33,25 @@ const OrgShell = () => (
   </OrgProvider>
 );
 
+const FullScreenSpinner = () => (
+  <div className="fixed inset-0 flex items-center justify-center">
+    <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+  </div>
+);
+
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
 
-  if (isLoadingPublicSettings || isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      navigateToLogin();
-      return null;
-    }
-  }
+  // Public routes (landing + auth pages) render immediately, independent of the
+  // auth/public-settings check, so an anonymous visitor always sees "/" right away.
+  // The loading/error gate below wraps ONLY the protected routes — a slow or failed
+  // public-settings call can never show a spinner forever or redirect the homepage.
+  const protectedGate =
+    isLoadingPublicSettings || isLoadingAuth
+      ? <FullScreenSpinner />
+      : authError?.type === 'user_not_registered'
+        ? <UserNotRegisteredError />
+        : <ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />;
 
   return (
     <Routes>
@@ -60,7 +60,7 @@ const AuthenticatedApp = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/" element={<Landing />} />
-      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
+      <Route element={protectedGate}>
         <Route path="/onboarding" element={<Onboarding />} />
         <Route element={<OrgShell />}>
           <Route path="/dashboard" element={<Dashboard />} />

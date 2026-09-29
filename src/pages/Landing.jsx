@@ -9,20 +9,21 @@ import Pricing from "@/components/landing/Pricing";
 import FAQ from "@/components/landing/FAQ";
 import FinalCTA from "@/components/landing/FinalCTA";
 import Footer from "@/components/landing/Footer";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 export default function Landing() {
   return (
     <div className="min-h-screen bg-background">
       <LandingNav />
       <main>
-        <Hero />
-        <MapDemo />
-        <HowItWorks />
-        <Features />
-        <WorksFor />
-        <Pricing />
-        <FAQ />
-        <FinalCTA />
+        <ErrorBoundary><Hero /></ErrorBoundary>
+        <ErrorBoundary><MapDemo /></ErrorBoundary>
+        <ErrorBoundary><HowItWorks /></ErrorBoundary>
+        <ErrorBoundary><Features /></ErrorBoundary>
+        <ErrorBoundary><WorksFor /></ErrorBoundary>
+        <ErrorBoundary><Pricing /></ErrorBoundary>
+        <ErrorBoundary><FAQ /></ErrorBoundary>
+        <ErrorBoundary><FinalCTA /></ErrorBoundary>
       </main>
       <Footer />
     </div>

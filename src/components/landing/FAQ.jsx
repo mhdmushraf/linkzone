@@ -3,7 +3,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 
 export const FAQS = [
   { q: "How does the trial work?", a: "Add your card at signup and nothing is charged for 14 days. On day 14, the one-time AED 500 setup fee plus your first month are charged automatically. Cancel before then and you pay nothing." },
-  { q: "Do I need WhatsApp Business API?", a: "No. Linkzone works with the WhatsApp you already use. Your reps message shops from a shared inbox, and replies come straight back in." },
+  { q: "Do I need WhatsApp Business API?", a: "Linkzone connects to the official WhatsApp Business API, so you can send offers and receive replies in one shared inbox. We guide you through connecting your number during setup." },
   { q: "Where does the shop data come from?", a: "Lead data is sourced and licensed for use inside your Linkzone subscription. It may not be resold or redistributed outside the platform." },
   { q: "Can I export my data?", a: "Yes. You can export your own customers, orders and products at any time. Lead-finder results are not exportable." },
   { q: "What happens if I cancel?", a: "Your workspace stays read-only for 30 days so you can export your data, after which it is archived." },

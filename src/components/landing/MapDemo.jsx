@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { ArrowRight, Route as RouteIcon } from "lucide-react";
+import { ArrowRight, MapPin, Route as RouteIcon } from "lucide-react";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { AREA_OPTIONS, INDUSTRY_OPTIONS, SAMPLE_SHOPS, areaCenter } from "./mapDemoData";
 
 const MapDemoMap = lazy(() => import("./MapDemoMap"));
@@ -28,6 +29,21 @@ function MapSkeleton() {
         <div className="w-10 h-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
         <span className="text-xs">Loading map…</span>
       </div>
+    </div>
+  );
+}
+
+function MapFallback() {
+  return (
+    <div className="h-full w-full flex flex-col items-center justify-center gap-2 bg-tint/40 p-6 text-center">
+      <MapPin className="w-8 h-8 text-primary/60" />
+      <p className="text-sm font-bold text-foreground">Map preview unavailable</p>
+      <p className="text-xs text-faint">Sign up to try Lead Finder.</p>
+      <Button asChild size="sm" className="mt-1 rounded-lg font-bold">
+        <Link to="/register">
+          Sign up <ArrowRight className="w-4 h-4" />
+        </Link>
+      </Button>
     </div>
   );
 }
@@ -142,14 +158,16 @@ export default function MapDemo() {
           <div>
             <div className="rounded-2xl border border-border bg-card overflow-hidden h-[360px] sm:h-[460px]">
               <Suspense fallback={<MapSkeleton />}>
-                <MapDemoMap
-                  shops={shops}
-                  center={center}
-                  zoom={zoom}
-                  radius={radius}
-                  added={added}
-                  onAdd={toggleAdd}
-                />
+                <ErrorBoundary fallback={<MapFallback />}>
+                  <MapDemoMap
+                    shops={shops}
+                    center={center}
+                    zoom={zoom}
+                    radius={radius}
+                    added={added}
+                    onAdd={toggleAdd}
+                  />
+                </ErrorBoundary>
               </Suspense>
             </div>
 
