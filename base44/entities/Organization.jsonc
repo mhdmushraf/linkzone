@@ -1,0 +1,83 @@
+{
+  "name": "Organization",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "industry": {
+      "type": "string",
+      "enum": [
+        "FMCG distribution",
+        "Spare parts",
+        "Pharmacy trading",
+        "IT & office supplies",
+        "Stationery",
+        "Packaging",
+        "Other"
+      ]
+    },
+    "logo_url": {
+      "type": "string"
+    },
+    "brand_color": {
+      "type": "string",
+      "default": "#6B4EF0"
+    },
+    "whatsapp_connected": {
+      "type": "boolean",
+      "default": false
+    },
+    "whatsapp_phone": {
+      "type": "string"
+    },
+    "members": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "data.members": "{{user.id}}"
+        }
+      ]
+    },
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

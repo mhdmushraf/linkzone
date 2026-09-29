@@ -1,0 +1,71 @@
+{
+  "name": "TeamInvite",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string"
+    },
+    "organization_id": {
+      "type": "string"
+    },
+    "app_role": {
+      "type": "string",
+      "enum": [
+        "owner",
+        "manager",
+        "sales",
+        "viewer"
+      ]
+    },
+    "route_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted"
+      ],
+      "default": "pending"
+    },
+    "invited_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "email",
+    "organization_id",
+    "app_role"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.email": "{{user.email}}"
+        },
+        {
+          "data.organization_id": "{{user.data.organization_id}}"
+        }
+      ]
+    },
+    "create": {
+      "data.organization_id": "{{user.data.organization_id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.email": "{{user.email}}"
+        },
+        {
+          "data.organization_id": "{{user.data.organization_id}}"
+        }
+      ]
+    },
+    "delete": {
+      "data.organization_id": "{{user.data.organization_id}}"
+    }
+  }
+}

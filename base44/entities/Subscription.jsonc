@@ -1,0 +1,61 @@
+{
+  "name": "Subscription",
+  "type": "object",
+  "properties": {
+    "organization_id": {
+      "type": "string"
+    },
+    "plan": {
+      "type": "string",
+      "enum": [
+        "starter",
+        "growth",
+        "enterprise"
+      ],
+      "default": "starter"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "trial",
+        "active",
+        "past_due",
+        "cancelled"
+      ],
+      "default": "trial"
+    },
+    "trial_start": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "trial_end": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "amount": {
+      "type": "number"
+    },
+    "seats": {
+      "type": "number",
+      "default": 3
+    }
+  },
+  "required": [
+    "organization_id",
+    "plan"
+  ],
+  "rls": {
+    "read": {
+      "data.organization_id": "{{user.data.organization_id}}"
+    },
+    "create": {
+      "data.organization_id": "{{user.data.organization_id}}"
+    },
+    "update": {
+      "data.organization_id": "{{user.data.organization_id}}"
+    },
+    "delete": {
+      "data.organization_id": "{{user.data.organization_id}}"
+    }
+  }
+}
