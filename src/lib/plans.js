@@ -1,6 +1,6 @@
 // Shared plan configuration for Linkzone pricing, allowances and trial limits.
 
-export const SETUP_FEE = 1500; // AED, one-time, non-refundable (enterprise = custom)
+export const SETUP_FEE = 500; // AED, one-time, non-refundable (enterprise = custom; waived on annual billing)
 export const TRIAL_LEAD_LIMIT = 50; // total lead pulls during the 14-day trial
 export const TRIAL_WHATSAPP_LIMIT = 100; // total WhatsApp sends during the trial
 export const MIN_TERM_MONTHS = 3; // monthly plans: minimum commitment
@@ -44,7 +44,8 @@ export const getPlan = (planId) => PLAN_MAP[planId] || PLAN_MAP.starter;
 // Pay annually: 12 months minus 2 free = monthly * 10
 export const annualPrice = (monthly) => (monthly ? monthly * 10 : null);
 
-// Setup fee per plan (enterprise = custom → null)
-export const setupFeeFor = (planId) => (planId === "enterprise" ? null : SETUP_FEE);
+// Setup fee per plan (enterprise = custom → null; waived on annual billing → 0)
+export const setupFeeFor = (planId, billingCycle) =>
+  planId === "enterprise" ? null : billingCycle === "annual" ? 0 : SETUP_FEE;
 
 export const aed = (n) => (n === null || n === undefined ? "Custom" : `AED ${Number(n).toLocaleString()}`);

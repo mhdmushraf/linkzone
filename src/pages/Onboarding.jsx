@@ -34,7 +34,7 @@ export default function Onboarding() {
   const [submitting, setSubmitting] = useState(false);
 
   const selectedPlan = PLANS.find((p) => p.id === plan);
-  const setupFee = setupFeeFor(plan);
+  const setupFee = setupFeeFor(plan, billingCycle);
   const firstMonth = selectedPlan.monthly;
   const annual = annualPrice(firstMonth);
 
@@ -241,9 +241,11 @@ export default function Onboarding() {
               {/* Setup fee line */}
               <div className="flex items-center justify-between gap-2 mt-4 px-1 text-sm">
                 <span className="text-muted-foreground">
-                  One-time setup fee <span className="text-faint">(non-refundable)</span>
+                  One-time setup fee <span className="text-faint">(non-refundable{billingCycle === "annual" ? ", waived annually" : ""})</span>
                 </span>
-                <span className="font-600">{setupFee === null ? "Custom" : aed(setupFee)}</span>
+                <span className="font-600">
+                  {setupFee === null ? "Custom" : setupFee === 0 ? "Waived" : aed(setupFee)}
+                </span>
               </div>
 
               {/* Green strip */}
@@ -256,8 +258,11 @@ export default function Onboarding() {
                 <div className="flex items-center justify-between gap-2 pt-2 border-t border-success/20">
                   <span className="text-xs font-600 text-success">Day 14</span>
                   <span className="text-xs font-700 text-success">
-                    {setupFee === null ? "Custom setup" : aed(setupFee)} one-time setup
-                    {firstMonth ? ` + ${aed(firstMonth)} first month` : " + first month"}
+                    {setupFee === null
+                      ? "Custom setup"
+                      : setupFee === 0
+                        ? `${annual ? aed(annual) : ""} first year`
+                        : `${aed(setupFee)} one-time setup${firstMonth ? ` + ${aed(firstMonth)} first month` : " + first month"}`}
                   </span>
                 </div>
               </div>
@@ -279,7 +284,13 @@ export default function Onboarding() {
                   <Input placeholder="CVC" value={card.cvc} onChange={(e) => setCard({ ...card, cvc: e.target.value })} className={inputCls} />
                 </div>
                 <p className="text-xs text-muted-foreground mt-3">
-                  Your card is saved now and charged AED 0. On day 14 the one-time setup fee plus the first {billingCycle === "annual" ? "year" : "month"} are charged. Cancel anytime before.
+                  Your card is saved now and charged AED 0. On day 14{" "}
+                  {setupFee === 0
+                    ? `the first ${billingCycle === "annual" ? "year" : "month"} is charged (setup fee waived)`
+                    : setupFee === null
+                      ? `the first ${billingCycle === "annual" ? "year" : "month"} plus custom setup are charged`
+                      : `the first ${billingCycle === "annual" ? "year" : "month"} plus the ${aed(setupFee)} one-time setup fee are charged`}.{" "}
+                  Cancel anytime before.
                 </p>
               </div>
 

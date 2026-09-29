@@ -50,7 +50,7 @@
     },
     "setup_fee": {
       "type": "number",
-      "default": 1500
+      "default": 500
     },
     "setup_fee_paid": {
       "type": "boolean",

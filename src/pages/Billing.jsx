@@ -17,7 +17,8 @@ export default function Billing() {
   const { subscription, organization } = useOrg();
   const sub = subscription?.data;
   const plan = getPlan(sub?.plan);
-  const setupFee = setupFeeFor(sub?.plan);
+  const cycle = sub?.billing_cycle || "monthly";
+  const setupFee = setupFeeFor(sub?.plan, cycle);
   const trial = isTrial(subscription);
   const readOnly = isReadOnly(subscription);
   const readOnlyUntil = readOnlyUntilDate(subscription);
@@ -26,7 +27,6 @@ export default function Billing() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
-  const cycle = sub?.billing_cycle || "monthly";
   const cycleAmount = cycle === "annual" ? annualPrice(plan.monthly) : plan.monthly;
 
   const cancelPlan = async () => {
@@ -98,8 +98,8 @@ export default function Billing() {
           <div className="mt-5 grid sm:grid-cols-2 gap-3">
             <div className="rounded-xl border border-border/60 p-3">
               <p className="text-xs text-muted-foreground">One-time setup fee</p>
-              <p className="font-700 mt-0.5">{setupFee === null ? "Custom" : aed(setupFee)}</p>
-              <p className="text-[11px] text-faint mt-0.5">Non-refundable · charged on day 14</p>
+              <p className="font-700 mt-0.5">{setupFee === null ? "Custom" : setupFee === 0 ? "Waived" : aed(setupFee)}</p>
+              <p className="text-[11px] text-faint mt-0.5">{setupFee === 0 ? "Waived on annual billing" : "Non-refundable · charged on day 14"}</p>
             </div>
             <div className="rounded-xl border border-border/60 p-3">
               <p className="text-xs text-muted-foreground">Minimum term</p>
@@ -119,8 +119,13 @@ export default function Billing() {
                 <p className="font-600 text-sm">Free trial — {daysLeft} days left</p>
               </div>
               <p className="text-sm text-muted-foreground">
-                Day 14: {setupFee === null ? "custom setup" : aed(setupFee)} one-time setup
-                {cycleAmount ? ` + ${aed(cycleAmount)} first ${cycle === "annual" ? "year" : "month"}` : " + first period"} are charged.
+                Day 14: {setupFee === null
+                  ? "custom setup"
+                  : setupFee === 0
+                    ? "setup waived"
+                    : `${aed(setupFee)} one-time setup`}
+                {setupFee !== 0 ? (cycleAmount ? ` + ${aed(cycleAmount)} first ${cycle === "annual" ? "year" : "month"}` : " + first period") : (cycleAmount ? ` ${aed(cycleAmount)} first year` : " first period")}
+                {setupFee === 0 ? " is charged" : " are charged"}.
               </p>
               <div className="mt-3 h-2 rounded-full bg-accent/10 overflow-hidden">
                 <div className="h-full bg-accent rounded-full" style={{ width: `${((14 - (daysLeft || 0)) / 14) * 100}%` }} />
