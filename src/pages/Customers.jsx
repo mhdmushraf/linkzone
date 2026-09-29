@@ -355,8 +355,30 @@ export default function Customers() {
 
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <span className="text-sm text-faint">{filtered.length} of {customers.length} customers</span>
-        {activeFilterCount > 0 && <button onClick={clearAll} className="text-xs font-600 text-primary hover:underline">Clear all filters</button>}
+        {activeFilterCount > 0 && <button onClick={clearAll} className="text-xs font-600 text-primary hover:underline">Clear all</button>}
       </div>
+      {(() => {
+        const chips = [];
+        if (q) chips.push({ label: `"${q}"`, clear: () => setParam("q", "") });
+        statusF.forEach((s) => chips.push({ label: `Status: ${s.replace("_", " ")}`, clear: () => setParam("status", statusF.filter((x) => x !== s)) }));
+        routeF.forEach((r) => chips.push({ label: `Route: ${r === "unassigned" ? "Unassigned" : routeName(r)}`, clear: () => setParam("route", routeF.filter((x) => x !== r)) }));
+        salesF.forEach((s) => chips.push({ label: `Salesman: ${s === "unassigned" ? "Unassigned" : repName(s)}`, clear: () => setParam("salesman", salesF.filter((x) => x !== s)) }));
+        sourceF.forEach((s) => chips.push({ label: `Source: ${SOURCE_OPTS.find((o) => o.value === s)?.label || s}`, clear: () => setParam("source", sourceF.filter((x) => x !== s)) }));
+        if (areaF) chips.push({ label: `Area: ${areaF}`, clear: () => setParam("area", "") });
+        if (industryF) chips.push({ label: `Industry: ${industryF}`, clear: () => setParam("industry", "") });
+        if (waF) chips.push({ label: "Has WhatsApp", clear: () => setParam("wa", "") });
+        if (lastOrderF) chips.push({ label: LAST_ORDER_OPTS.find((o) => o.value === lastOrderF)?.label, clear: () => setParam("lastOrder", "") });
+        if (!chips.length) return null;
+        return (
+          <div className="flex flex-wrap items-center gap-1.5 mb-3">
+            {chips.map((c, i) => (
+              <button key={i} onClick={c.clear} className="inline-flex items-center gap-1 bg-tint text-primary text-xs font-600 px-2.5 py-1 rounded-full border border-primary/20 hover:bg-primary/10">
+                {c.label}<X className="w-3 h-3" />
+              </button>
+            ))}
+          </div>
+        );
+      })()}
 
       {selected.size > 0 && (
         <BulkActionsBar

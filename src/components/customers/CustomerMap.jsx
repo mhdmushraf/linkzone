@@ -72,6 +72,11 @@ export default function CustomerMap({ customers, routes, team, highlightId, onMa
       >
         <PenLine className="w-3.5 h-3.5" />{drawActive ? "Drawing… drag on map" : "Draw area"}
       </button>
+      <div className="absolute bottom-2.5 left-2.5 z-[1000] bg-card rounded-lg border border-border shadow-sm p-2 flex flex-col gap-1">
+        {Object.entries(STATUS_COLORS).map(([k, v]) => (
+          <div key={k} className="flex items-center gap-1.5 text-[10px] font-600 capitalize"><span className="w-2.5 h-2.5 rounded-full" style={{ background: v }} />{k.replace("_", " ")}</div>
+        ))}
+      </div>
     </div>
   );
 }
