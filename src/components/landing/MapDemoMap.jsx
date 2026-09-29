@@ -1,38 +1,34 @@
 import React, { useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
-import MarkerClusterGroup from "react-leaflet-cluster";
 import "leaflet/dist/leaflet.css";
-import "leaflet.markercluster/dist/MarkerCluster.css";
-import { pinIcon, clusterIcon, VIOLET } from "@/lib/mapIcons";
+import { pinIcon, VIOLET, GREEN } from "@/lib/mapIcons";
+import { maskPhone } from "./mapDemoData";
 
-function FlyTo({ position, zoom }) {
+function FlyTo({ position, flyKey, zoom }) {
   const map = useMap();
   useEffect(() => {
-    if (position) map.flyTo(position, zoom, { duration: 0.7 });
-  }, [position, zoom]); // eslint-disable-line
+    if (position) map.flyTo(position, zoom, { duration: 0.6 });
+  }, [flyKey]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 }
 
-function maskPhone(p) {
-  const d = p.replace(/\D/g, "");
-  return `+${d.slice(0, 3)} ${d.slice(3, 5)} ••• ${d.slice(-4)}`;
-}
-
-export default function MapDemoMap({ shops, center, zoom, radius, added, onAdd }) {
+export default function MapDemoMap({ shops, center, zoom, radius, added, onAdd, highlightId, flyTo, flyKey, onMarkerClick }) {
   return (
     <MapContainer center={center} zoom={zoom} className="h-full w-full" scrollWheelZoom={false}>
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; OpenStreetMap contributors'
+        attribution="&copy; OpenStreetMap contributors"
       />
-      <MarkerClusterGroup
-        iconCreateFunction={clusterIcon}
-        chunkedLoading
-        showCoverageOnHover={false}
-        maxClusterRadius={45}
-      >
-        {shops.map((s) => (
-          <Marker key={s.id} position={[s.lat, s.lng]} icon={pinIcon(VIOLET, added.has(s.id))}>
+      {shops.map((s) => {
+        const isAdded = added.has(s.id);
+        const isHover = highlightId === s.id;
+        return (
+          <Marker
+            key={s.id}
+            position={[s.lat, s.lng]}
+            icon={pinIcon(isAdded ? GREEN : VIOLET, isHover)}
+            eventHandlers={{ click: () => onMarkerClick && onMarkerClick(s.id) }}
+          >
             <Popup>
               <div className="min-w-[180px]">
                 <p className="text-sm font-bold text-foreground">{s.name}</p>
@@ -40,21 +36,21 @@ export default function MapDemoMap({ shops, center, zoom, radius, added, onAdd }
                 <p className="text-xs text-faint mt-1">{maskPhone(s.phone)}</p>
                 <button
                   onClick={() => onAdd(s.id)}
-                  className={`mt-2 w-full text-xs font-semibold rounded-lg px-3 py-1.5 transition-colors ${added.has(s.id) ? "bg-success/15 text-success" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
+                  className={`mt-2 w-full text-xs font-semibold rounded-lg px-3 py-1.5 transition-colors ${isAdded ? "bg-success/15 text-success" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
                 >
-                  {added.has(s.id) ? "Added ✓" : "Add to route"}
+                  {isAdded ? "Added ✓" : "Add to route"}
                 </button>
               </div>
             </Popup>
           </Marker>
-        ))}
-      </MarkerClusterGroup>
+        );
+      })}
       <Circle
         center={center}
         radius={radius * 1000}
         pathOptions={{ color: VIOLET, fillColor: VIOLET, fillOpacity: 0.06, weight: 1.5 }}
       />
-      <FlyTo position={center} zoom={zoom} />
+      <FlyTo position={flyTo} flyKey={flyKey} zoom={zoom} />
     </MapContainer>
   );
 }

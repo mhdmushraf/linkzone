@@ -1,10 +1,8 @@
 import React, { useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Circle, Rectangle, useMap, useMapEvents } from "react-leaflet";
-import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import "leaflet.markercluster/dist/MarkerCluster.css";
-import { pinIcon, clusterIcon, VIOLET } from "@/lib/mapIcons";
+import { pinIcon, VIOLET } from "@/lib/mapIcons";
 
 function MoveHandler({ onMoveEnd }) {
   const map = useMapEvents({ moveend: () => onMoveEnd && onMoveEnd(map.getCenter(), map.getZoom()) });
@@ -15,7 +13,7 @@ function FlyTo({ position, zoom }) {
   const map = useMap();
   useEffect(() => {
     if (position) map.flyTo(position, zoom ?? map.getZoom(), { duration: 0.6 });
-  }, [position, zoom]); // eslint-disable-line
+  }, [position, zoom]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 }
 
@@ -26,7 +24,7 @@ function FitBounds({ bbox }) {
       const b = L.latLngBounds([[bbox.south, bbox.west], [bbox.north, bbox.east]]);
       map.fitBounds(b, { padding: [40, 40], maxZoom: 16 });
     }
-  }, [bbox]); // eslint-disable-line
+  }, [bbox]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 }
 
@@ -57,20 +55,18 @@ export default function MapView({ center, zoom = 13, markers = [], circle, bbox,
     <MapContainer center={center} zoom={zoom} className={className} style={style} scrollWheelZoom>
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; OpenStreetMap contributors'
+        attribution="&copy; OpenStreetMap contributors"
       />
-      <MarkerClusterGroup iconCreateFunction={clusterIcon} chunkedLoading showCoverageOnHover={false} maxClusterRadius={45}>
-        {markers.map((m) => (
-          <Marker
-            key={m.id}
-            position={m.position}
-            icon={pinIcon(m.color, m.id === highlightId)}
-            eventHandlers={{ click: () => onMarkerClick && onMarkerClick(m.id) }}
-          >
-            {m.popup && <Popup>{m.popup}</Popup>}
-          </Marker>
-        ))}
-      </MarkerClusterGroup>
+      {markers.map((m) => (
+        <Marker
+          key={m.id}
+          position={m.position}
+          icon={pinIcon(m.color, m.id === highlightId)}
+          eventHandlers={{ click: () => onMarkerClick && onMarkerClick(m.id) }}
+        >
+          {m.popup && <Popup>{m.popup}</Popup>}
+        </Marker>
+      ))}
       {circle && (
         <Circle center={circle.center} radius={(circle.radius || 5) * 1000} pathOptions={{ color: VIOLET, fillColor: VIOLET, fillOpacity: 0.06, weight: 1.5 }} />
       )}

@@ -1,5 +1,6 @@
 import React from "react";
 import MapView from "@/components/map/MapView";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { Button } from "@/components/ui/button";
 import { Search, LocateFixed } from "lucide-react";
 import { VIOLET, GREEN } from "@/lib/mapIcons";
@@ -37,18 +38,23 @@ export default function LeadMap({ leads, added, mapCenter, radiusKm, onRadiusCha
   }));
   return (
     <div className="relative h-full min-h-[300px]">
-      <MapView
-        center={mapCenter || [25.2048, 55.2708]}
-        zoom={12}
-        markers={markers}
-        circle={mapCenter ? { center: mapCenter, radius: radiusKm } : null}
-        bbox={bbox}
-        onMoveEnd={onMoveEnd}
-        highlightId={highlightIndex}
-        onMarkerClick={onMarkerClick}
-        flyTo={flyTo}
-        className="absolute inset-0 h-full w-full"
-      />
+      <ErrorBoundary
+        name="LeadMap"
+        fallback={<div className="absolute inset-0 flex items-center justify-center text-sm text-faint bg-tint/30">Map unavailable</div>}
+      >
+        <MapView
+          center={mapCenter || [25.2048, 55.2708]}
+          zoom={12}
+          markers={markers}
+          circle={mapCenter ? { center: mapCenter, radius: radiusKm } : null}
+          bbox={bbox}
+          onMoveEnd={onMoveEnd}
+          highlightId={highlightIndex}
+          onMarkerClick={onMarkerClick}
+          flyTo={flyTo}
+          className="absolute inset-0 h-full w-full"
+        />
+      </ErrorBoundary>
       <div className="absolute top-2.5 right-2.5 z-[1000] bg-card rounded-lg border border-border shadow-sm p-1 flex gap-0.5">
         {RADII.map((r) => (
           <button key={r} onClick={() => onRadiusChange(r)} className={`px-2 h-7 rounded-md text-xs font-600 ${radiusKm === r ? "bg-primary text-white" : "text-faint hover:bg-muted"}`}>{r}km</button>

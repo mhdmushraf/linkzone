@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import MapView from "@/components/map/MapView";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { Button } from "@/components/ui/button";
 import { STATUS_COLORS } from "@/lib/mapIcons";
 import { waLink } from "@/lib/wa";
@@ -54,17 +55,22 @@ export default function CustomerMap({ customers, routes, team, highlightId, onMa
   return (
     <div className="relative h-full min-h-[400px]">
       {loading && <div className="absolute inset-0 z-[1100] bg-background/40 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>}
-      <MapView
-        center={centroid(customers)}
-        zoom={12}
-        markers={markers}
-        highlightId={highlightId}
-        onMarkerClick={onMarkerClick}
-        drawActive={drawActive}
-        onDrawSelect={onDrawSelect}
-        onDrawDone={onDrawDone}
-        className="absolute inset-0 h-full w-full"
-      />
+      <ErrorBoundary
+        name="CustomerMap"
+        fallback={<div className="absolute inset-0 flex items-center justify-center text-sm text-faint bg-tint/30">Map unavailable</div>}
+      >
+        <MapView
+          center={centroid(customers)}
+          zoom={12}
+          markers={markers}
+          highlightId={highlightId}
+          onMarkerClick={onMarkerClick}
+          drawActive={drawActive}
+          onDrawSelect={onDrawSelect}
+          onDrawDone={onDrawDone}
+          className="absolute inset-0 h-full w-full"
+        />
+      </ErrorBoundary>
       <button
         onClick={onToggleDraw}
         className={`absolute top-2.5 left-2.5 z-[1000] rounded-lg px-3 h-8 text-xs font-600 flex items-center gap-1.5 shadow-sm border ${drawActive ? "bg-primary text-white border-primary" : "bg-card border-border hover:bg-muted"}`}

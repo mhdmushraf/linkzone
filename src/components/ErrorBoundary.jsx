@@ -4,7 +4,7 @@ import React from "react";
  * Generic React error boundary. If a child throws during render, the boundary
  * renders `fallback` instead, so one broken subtree can never blank the page.
  * Defaults to rendering nothing so a broken section simply disappears while
- * the rest of the page keeps working.
+ * the rest of the page keeps working. Pass a `name` prop for clearer logs.
  */
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -17,8 +17,9 @@ export default class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
+    const label = this.props.name ? `ErrorBoundary:${this.props.name}` : "ErrorBoundary";
     // eslint-disable-next-line no-console
-    console.error("ErrorBoundary caught an error:", error, info);
+    console.error(`[${label}]`, error?.message || error, info);
   }
 
   render() {

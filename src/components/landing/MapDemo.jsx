@@ -1,4 +1,4 @@
-import React, { useMemo, useState, Suspense, lazy } from "react";
+import React, { useMemo, useState, useRef, Suspense, lazy } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
@@ -7,6 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import { ArrowRight, MapPin, Route as RouteIcon } from "lucide-react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { AREA_OPTIONS, INDUSTRY_OPTIONS, SAMPLE_SHOPS, areaCenter } from "./mapDemoData";
+import ShopList from "./ShopList";
 
 const MapDemoMap = lazy(() => import("./MapDemoMap"));
 
@@ -54,6 +55,12 @@ export default function MapDemo() {
   const [hasWhatsApp, setHasWhatsApp] = useState(false);
   const [radius, setRadius] = useState(3);
   const [added, setAdded] = useState(() => new Set());
+  const [hoverId, setHoverId] = useState(null);
+  const [flyTarget, setFlyTarget] = useState(null);
+  const [flyKey, setFlyKey] = useState(0);
+  const [pulseId, setPulseId] = useState(null);
+  const listRef = useRef(null);
+  const pulseTimer = useRef(null);
 
   const center = useMemo(() => areaCenter(area), [area]);
   const zoom = radius <= 2 ? 14 : radius <= 4 ? 13 : 12;
@@ -75,6 +82,22 @@ export default function MapDemo() {
       else next.add(id);
       return next;
     });
+
+  const onCardActivate = (s) => {
+    setHoverId(s.id);
+    setFlyTarget([s.lat, s.lng]);
+    setFlyKey((k) => k + 1);
+  };
+  const onCardDeactivate = () => setHoverId(null);
+
+  const onMarkerClick = (id) => {
+    const el = listRef.current?.querySelector(`[data-shop-id="${id}"]`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setPulseId(id);
+    setHoverId(id);
+    if (pulseTimer.current) window.clearTimeout(pulseTimer.current);
+    pulseTimer.current = window.setTimeout(() => setPulseId(null), 1600);
+  };
 
   return (
     <section id="map-demo" className="py-16 lg:py-24 bg-tint/40">
@@ -166,6 +189,10 @@ export default function MapDemo() {
                     radius={radius}
                     added={added}
                     onAdd={toggleAdd}
+                    highlightId={hoverId}
+                    flyTo={flyTarget}
+                    flyKey={flyKey}
+                    onMarkerClick={onMarkerClick}
                   />
                 </ErrorBoundary>
               </Suspense>
@@ -182,6 +209,19 @@ export default function MapDemo() {
                 </span>
                 <span className="text-faint">{added.size} added</span>
               </div>
+            </div>
+
+            <div className="mt-6">
+              <ShopList
+                shops={shops}
+                area={area}
+                added={added}
+                onAdd={toggleAdd}
+                onActivate={onCardActivate}
+                onDeactivate={onCardDeactivate}
+                pulseId={pulseId}
+                listRef={listRef}
+              />
             </div>
 
             <p className="mt-3 text-xs text-faint">
