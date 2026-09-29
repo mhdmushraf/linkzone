@@ -12,7 +12,7 @@ function buildForm(params) {
   const add = (key, val) => {
     if (val === undefined || val === null) return;
     if (Array.isArray(val)) {
-      val.forEach((v) => add(`${key}[]`, v));
+      val.forEach((v, i) => add(`${key}[${i}]`, v));
     } else if (typeof val === "object") {
       for (const k of Object.keys(val)) add(`${key}[${k}]`, val[k]);
     } else {

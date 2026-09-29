@@ -21,7 +21,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
-import { isReadOnly, readOnlyUntilDate } from "@/lib/planRules";
+import { isReadOnly, readOnlyUntilDate, isTrial, trialDaysLeft } from "@/lib/planRules";
+import { getPlan, setupFeeFor, annualPrice, aed } from "@/lib/plans";
 import { format } from "date-fns";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
@@ -184,6 +185,32 @@ export default function AppLayout({ children }) {
               <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" />
               <span className="text-foreground">
                 Account is read-only{until ? ` — closes on ${format(until, "dd MMM yyyy")}` : ""}. Export your data from Customers and Orders.
+              </span>
+            </div>
+          );
+        })()}
+        {subscription?.data?.status === "past_due" && (
+          <div className="flex items-center gap-3 px-4 lg:px-8 py-2.5 bg-destructive/10 border-b border-destructive/20 text-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" />
+            <span className="text-foreground">
+              Your last payment failed — <NavLink to="/billing" className="font-600 text-primary hover:underline">update your card</NavLink> so we can retry the charge.
+            </span>
+          </div>
+        )}
+        {isTrial(subscription) && (() => {
+          const left = trialDaysLeft(subscription);
+          if (left === null || left > 3) return null;
+          const planDef = getPlan(subscription?.data?.plan);
+          const cyc = subscription?.data?.billing_cycle || "monthly";
+          const fee = setupFeeFor(subscription?.data?.plan, cyc);
+          const cycAmount = cyc === "annual" ? annualPrice(planDef.monthly) : planDef.monthly;
+          const amount = fee === null ? cycAmount : fee === 0 ? cycAmount : (fee + cycAmount);
+          const date = subscription?.data?.trial_end ? format(new Date(subscription.data.trial_end), "dd MMM yyyy") : "day 14";
+          return (
+            <div className="flex items-center gap-3 px-4 lg:px-8 py-2.5 bg-warning-muted border-b border-warning/30 text-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-warning shrink-0" />
+              <span className="text-foreground">
+                Your card will be charged {amount ? aed(amount) : ""} on {date}.
               </span>
             </div>
           );

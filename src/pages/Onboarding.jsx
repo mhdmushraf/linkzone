@@ -1,13 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, Check, Store, Wrench, Pill, Laptop, Pencil, Box, Building2, CreditCard, Loader2 } from "lucide-react";
+import { ArrowRight, Check, Store, Wrench, Pill, Laptop, Pencil, Box, Building2, Loader2 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { AuthSidePanel } from "@/components/AuthLayout";
 import { cn } from "@/lib/utils";
 import { PLANS, setupFeeFor, annualPrice, aed } from "@/lib/plans";
+import { Elements } from "@stripe/react-stripe-js";
+import { getStripe, STRIPE_APPEARANCE } from "@/lib/stripeClient";
+import { createSetupIntent } from "@/functions/createSetupIntent";
+import { startTrial } from "@/functions/startTrial";
+import PaymentSetup from "@/components/stripe/PaymentSetup";
 
 const INDUSTRIES = [
   { name: "FMCG distribution", icon: Store },
@@ -30,59 +35,97 @@ export default function Onboarding() {
   const [industry, setIndustry] = useState("");
   const [plan, setPlan] = useState("growth");
   const [billingCycle, setBillingCycle] = useState("monthly");
-  const [card, setCard] = useState({ number: "", expiry: "", cvc: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [stripePromise, setStripePromise] = useState(null);
+  const [clientSecret, setClientSecret] = useState(null);
+  const createdRef = useRef(null);
 
   const selectedPlan = PLANS.find((p) => p.id === plan);
   const setupFee = setupFeeFor(plan, billingCycle);
   const firstMonth = selectedPlan.monthly;
   const annual = annualPrice(firstMonth);
 
-  const finish = async () => {
+  useEffect(() => {
+    getStripe().then(setStripePromise).catch((e) => {
+      toast({ title: "Payment setup failed", description: e.message, variant: "destructive" });
+    });
+  }, []);
+
+  useEffect(() => {
+    if (step === 2 && !clientSecret) {
+      createSetupIntent({})
+        .then((res) => setClientSecret(res.data.clientSecret))
+        .catch((e) => toast({ title: "Payment setup failed", description: e.message, variant: "destructive" }));
+    }
+  }, [step, clientSecret]);
+
+  const noteText = `Your card is saved and charged AED 0. On day 14 ${
+    setupFee === 0
+      ? `the first ${billingCycle === "annual" ? "year" : "month"} is charged (setup fee waived)`
+      : setupFee === null
+        ? `the first ${billingCycle === "annual" ? "year" : "month"} plus custom setup are charged`
+        : `the first ${billingCycle === "annual" ? "year" : "month"} plus the ${aed(setupFee)} one-time setup fee are charged`
+  }. Cancel anytime before.`;
+
+  const onConfirmed = async (setupIntent) => {
     setSubmitting(true);
     try {
-      const me = await base44.auth.me();
-      const org = await base44.entities.Organization.create({
-        name: company,
-        industry,
-        brand_color: "#6B4EF0",
-        whatsapp_connected: false,
-        members: [me.id],
-      });
-      const now = new Date();
-      const trialEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-      const minTermMonths = billingCycle === "annual" ? 12 : 3;
-      const minTermEnd = new Date(trialEnd.getTime() + minTermMonths * 30 * 24 * 60 * 60 * 1000);
-      await base44.entities.Subscription.create({
-        organization_id: org.id,
+      let orgId, subId;
+      if (createdRef.current) {
+        orgId = createdRef.current.orgId;
+        subId = createdRef.current.subId;
+      } else {
+        const me = await base44.auth.me();
+        const org = await base44.entities.Organization.create({
+          name: company,
+          industry,
+          brand_color: "#6B4EF0",
+          whatsapp_connected: false,
+          members: [me.id],
+        });
+        orgId = org.id;
+        const now = new Date();
+        const trialEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+        const minTermMonths = billingCycle === "annual" ? 12 : 3;
+        const minTermEnd = new Date(trialEnd.getTime() + minTermMonths * 30 * 24 * 60 * 60 * 1000);
+        const sub = await base44.entities.Subscription.create({
+          organization_id: org.id,
+          plan,
+          status: "trial",
+          trial_start: now.toISOString(),
+          trial_end: trialEnd.toISOString(),
+          amount: billingCycle === "annual" ? annual || 0 : firstMonth || 0,
+          seats: selectedPlan.seats,
+          billing_cycle: billingCycle,
+          setup_fee: setupFee === null ? 0 : setupFee,
+          setup_fee_paid: false,
+          min_term_end: minTermEnd.toISOString(),
+          lead_limit_monthly: selectedPlan.leadLimit === null ? 0 : selectedPlan.leadLimit,
+          lead_pulls_used: 0,
+          lead_pulls_month: now.toISOString().slice(0, 7),
+          lead_pulls_trial_used: 0,
+          whatsapp_sends_used: 0,
+          whatsapp_sends_month: now.toISOString().slice(0, 7),
+          stripe_customer_id: setupIntent.customer,
+        });
+        subId = sub.id;
+        await base44.auth.updateMe({ organization_id: org.id, app_role: "owner", name });
+        createdRef.current = { orgId, subId };
+      }
+      await startTrial({
+        organizationId: orgId,
+        subId,
+        customerId: setupIntent.customer,
+        paymentMethodId: setupIntent.payment_method,
         plan,
-        status: "trial",
-        trial_start: now.toISOString(),
-        trial_end: trialEnd.toISOString(),
-        amount: billingCycle === "annual" ? (annual || 0) : firstMonth || 0,
-        seats: selectedPlan.seats,
-        billing_cycle: billingCycle,
-        setup_fee: setupFee === null ? 0 : setupFee,
-        setup_fee_paid: false,
-        min_term_end: minTermEnd.toISOString(),
-        lead_limit_monthly: selectedPlan.leadLimit === null ? 0 : selectedPlan.leadLimit,
-        lead_pulls_used: 0,
-        lead_pulls_month: now.toISOString().slice(0, 7),
-        lead_pulls_trial_used: 0,
-        whatsapp_sends_used: 0,
-        whatsapp_sends_month: now.toISOString().slice(0, 7),
-      });
-      await base44.auth.updateMe({
-        organization_id: org.id,
-        app_role: "owner",
-        name,
+        billingCycle,
       });
       localStorage.removeItem("lz_name");
       localStorage.removeItem("lz_company");
       toast({ title: "Welcome to Linkzone", description: "Your 14-day trial has started." });
       window.location.href = "/";
     } catch (e) {
-      toast({ title: "Something went wrong", description: e.message, variant: "destructive" });
+      toast({ title: "Payment setup failed", description: e.message, variant: "destructive" });
       setSubmitting(false);
     }
   };
@@ -267,39 +310,16 @@ export default function Onboarding() {
                 </div>
               </div>
 
-              {/* Card fields */}
-              <div className="mt-5">
-                <Label className="font-600 mb-1.5 block">Card details</Label>
-                <div className="relative">
-                  <CreditCard className="absolute left-3 top-4 w-4 h-4 text-faint" />
-                  <Input
-                    placeholder="Card number"
-                    value={card.number}
-                    onChange={(e) => setCard({ ...card, number: e.target.value })}
-                    className={`pl-10 mb-2 ${inputCls}`}
-                  />
+              {/* Card details (Stripe Elements) */}
+              {stripePromise && clientSecret ? (
+                <Elements stripe={stripePromise} options={{ clientSecret, appearance: STRIPE_APPEARANCE }}>
+                  <PaymentSetup onBack={() => setStep(1)} onConfirmed={onConfirmed} submitting={submitting} noteText={noteText} />
+                </Elements>
+              ) : (
+                <div className="mt-5 flex items-center justify-center py-8">
+                  <Loader2 className="w-5 h-5 animate-spin text-faint" />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Input placeholder="MM / YY" value={card.expiry} onChange={(e) => setCard({ ...card, expiry: e.target.value })} className={inputCls} />
-                  <Input placeholder="CVC" value={card.cvc} onChange={(e) => setCard({ ...card, cvc: e.target.value })} className={inputCls} />
-                </div>
-                <p className="text-xs text-muted-foreground mt-3">
-                  Your card is saved now and charged AED 0. On day 14{" "}
-                  {setupFee === 0
-                    ? `the first ${billingCycle === "annual" ? "year" : "month"} is charged (setup fee waived)`
-                    : setupFee === null
-                      ? `the first ${billingCycle === "annual" ? "year" : "month"} plus custom setup are charged`
-                      : `the first ${billingCycle === "annual" ? "year" : "month"} plus the ${aed(setupFee)} one-time setup fee are charged`}.{" "}
-                  Cancel anytime before.
-                </p>
-              </div>
-
-              <div className="flex gap-3 mt-6">
-                <Button variant="outline" className="h-12 flex-1 rounded-[10px] bg-white font-600" onClick={() => setStep(1)}>Back</Button>
-                <Button className="h-12 flex-1 rounded-[10px] font-600" disabled={submitting} onClick={finish}>
-                  {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Starting…</> : "Start free trial"}
-                </Button>
-              </div>
+              )}
             </div>
           )}
 
