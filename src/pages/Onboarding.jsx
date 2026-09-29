@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,7 +46,6 @@ const PLANS = [
 ];
 
 export default function Onboarding() {
-  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [name, setName] = useState(localStorage.getItem("lz_name") || "");
   const [company, setCompany] = useState(localStorage.getItem("lz_company") || "");
