@@ -44,7 +44,7 @@ function CustomerPopup({ c, routeLabel, repLabel, team, onAssign }) {
   );
 }
 
-export default function CustomerMap({ customers, routes, team, highlightId, onMarkerClick, drawActive, onToggleDraw, onDrawSelect, onDrawDone, loading, repName, routeName }) {
+export default function CustomerMap({ customers, routes, team, highlightId, onMarkerClick, drawActive, onToggleDraw, onDrawSelect, onDrawDone, loading, repName, routeName, onAssign }) {
   const markers = customers.filter((c) => c.data.lat != null && c.data.lng != null).map((c) => ({
     id: c.id,
     position: [c.data.lat, c.data.lng],
