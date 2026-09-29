@@ -7,7 +7,7 @@ import { ArrowRight, Check, Store, Wrench, Pill, Laptop, Pencil, Box, Building2,
 import { toast } from "@/components/ui/use-toast";
 import { AuthSidePanel } from "@/components/AuthLayout";
 import { cn } from "@/lib/utils";
-import { PLANS, setupFeeFor, annualPrice, SETUP_FEE, aed } from "@/lib/plans";
+import { PLANS, setupFeeFor, annualPrice, aed } from "@/lib/plans";
 
 const INDUSTRIES = [
   { name: "FMCG distribution", icon: Store },

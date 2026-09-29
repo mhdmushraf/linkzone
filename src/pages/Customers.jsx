@@ -110,7 +110,7 @@ export default function Customers() {
   const save = async () => {
     setSaving(true);
     try {
-      const payload = { ...form, organization_id: orgId, route_id: form.route_id || null, assigned_to: form.assigned_to || null, source: editing ? (form.source || "manual") : "manual" };
+      const payload = { ...form, organization_id: orgId, route_id: form.route_id || null, assigned_to: form.assigned_to || null, source: editing ? (editing.data.source || "manual") : "manual" };
       if (editing) await base44.entities.Customer.update(editing.id, payload);
       else await base44.entities.Customer.create(payload);
       toast({ title: editing ? "Customer updated" : "Customer added" });
