@@ -10,13 +10,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Users, Plus, Pencil, Trash2, Loader2, Search, MapPin, Route as RouteIcon } from "lucide-react";
+import { Users, Plus, Pencil, Trash2, Loader2, Search, MapPin, Route as RouteIcon, Download, Lock, Sparkles } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import { downloadCSV } from "@/lib/csv";
+import { isTrial, isReadOnly, canExport } from "@/lib/planRules";
 
 const STATUSES = ["active", "to_reorder", "new", "win_back"];
 
 export default function Customers() {
-  const { organization, team, appRole } = useOrg();
+  const { organization, team, appRole, subscription } = useOrg();
   const orgId = organization?.id;
   const canManage = appRole === "owner" || appRole === "manager";
   const [customers, setCustomers] = useState([]);
@@ -32,16 +34,57 @@ export default function Customers() {
   const [routeForm, setRouteForm] = useState({ name: "", area: "", assigned_to: "" });
   const [form, setForm] = useState({ business_name: "", contact_name: "", phone: "", whatsapp_number: "", address: "", area: "", route_id: "", status: "new", industry: "", assigned_to: "" });
 
+  const [orders, setOrders] = useState([]);
+  const [convs, setConvs] = useState([]);
+
   const load = async () => {
     if (!orgId) return;
     setLoading(true);
-    const [c, r] = await Promise.all([
+    const [c, r, o, cv] = await Promise.all([
       base44.entities.Customer.filter({ organization_id: orgId }, "-created_date", 500),
       base44.entities.Route.filter({ organization_id: orgId }, "-created_date", 500),
+      base44.entities.Order.filter({ organization_id: orgId }, "-created_date", 500),
+      base44.entities.Conversation.filter({ organization_id: orgId }, "-created_date", 500),
     ]);
     setCustomers(c);
     setRoutes(r);
+    setOrders(o);
+    setConvs(cv);
     setLoading(false);
+  };
+
+  const exportableCustomers = useMemo(() => {
+    const hasActivity = new Set([
+      ...orders.map((o) => o.data.customer_id),
+      ...convs.map((c) => c.data.customer_id),
+    ]);
+    // Export own data only: manual/imported always; lead_finder only if converted (order or conversation).
+    return customers.filter((c) => {
+      const src = c.data.source || "manual";
+      if (src === "lead_finder") return hasActivity.has(c.id);
+      return true;
+    });
+  }, [customers, orders, convs]);
+
+  const trial = isTrial(subscription);
+  const readOnly = isReadOnly(subscription);
+  const exportBlocked = !canExport(subscription);
+
+  const exportCSV = () => {
+    if (exportBlocked) return;
+    const rows = exportableCustomers.map((c) => ({
+      business_name: c.data.business_name,
+      contact_name: c.data.contact_name || "",
+      phone: c.data.phone || "",
+      whatsapp_number: c.data.whatsapp_number || "",
+      address: c.data.address || "",
+      area: c.data.area || "",
+      industry: c.data.industry || "",
+      status: c.data.status || "",
+      source: c.data.source || "manual",
+    }));
+    downloadCSV("linkzone-customers.csv", rows);
+    toast({ title: "Export ready", description: `${rows.length} customers exported.` });
   };
 
   useEffect(() => {
@@ -67,7 +110,7 @@ export default function Customers() {
   const save = async () => {
     setSaving(true);
     try {
-      const payload = { ...form, organization_id: orgId, route_id: form.route_id || null, assigned_to: form.assigned_to || null };
+      const payload = { ...form, organization_id: orgId, route_id: form.route_id || null, assigned_to: form.assigned_to || null, source: editing ? (form.source || "manual") : "manual" };
       if (editing) await base44.entities.Customer.update(editing.id, payload);
       else await base44.entities.Customer.create(payload);
       toast({ title: editing ? "Customer updated" : "Customer added" });
@@ -149,11 +192,26 @@ export default function Customers() {
 
   return (
     <AppLayout>
+      {readOnly && (
+        <div className="flex items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 mb-4">
+          <Lock className="w-4 h-4 mt-0.5 shrink-0 text-destructive" />
+          <p className="text-sm">Account is in read-only mode. Exporting your own data is still allowed; adding and editing are paused.</p>
+        </div>
+      )}
+      {trial && (
+        <div className="flex items-start gap-3 rounded-2xl border border-accent/30 bg-accent/10 p-4 mb-4">
+          <Sparkles className="w-4 h-4 mt-0.5 shrink-0 text-accent" />
+          <p className="text-sm">Trial mode — CSV export is disabled until your first payment on day 14.</p>
+        </div>
+      )}
       <PageHeader
         title="Customers"
         subtitle="Shops grouped by route and area"
         action={
           <div className="flex gap-2">
+            <Button variant="outline" onClick={exportCSV} disabled={exportBlocked} className="h-11" title={exportBlocked ? "Export is disabled during the trial" : "Export your own customers (CSV)"}>
+              <Download className="w-4 h-4 mr-2" /> Export
+            </Button>
             <Button variant="outline" onClick={() => setRouteOpen(true)} className="h-11">
               <RouteIcon className="w-4 h-4 mr-2" /> New route
             </Button>

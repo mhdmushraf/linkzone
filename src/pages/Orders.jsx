@@ -6,11 +6,14 @@ import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
 import StatusBadge from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Loader2, Bell } from "lucide-react";
+import { ShoppingCart, Loader2, Bell, Download, Lock, Sparkles } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
+import { downloadCSV } from "@/lib/csv";
+import { isTrial, isReadOnly, canExport } from "@/lib/planRules";
+import { toast } from "@/components/ui/use-toast";
 
 export default function Orders() {
-  const { organization, team } = useOrg();
+  const { organization, team, subscription } = useOrg();
   const orgId = organization?.id;
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -56,6 +59,24 @@ export default function Orders() {
   const totalRevenue = orders.reduce((s, o) => s + (o.data.amount || 0), 0);
   const dueAmount = orders.filter((o) => o.data.paid_status !== "paid").reduce((s, o) => s + (o.data.amount || 0), 0);
 
+  const trial = isTrial(subscription);
+  const readOnly = isReadOnly(subscription);
+  const exportBlocked = !canExport(subscription);
+
+  const exportCSV = () => {
+    if (exportBlocked) return;
+    const rows = filtered.map((o) => ({
+      customer: o.data.customer_name || "",
+      rep: repName(o.data.salesman_id),
+      date: o.data.order_date ? format(new Date(o.data.order_date), "yyyy-MM-dd") : "",
+      amount: o.data.amount || 0,
+      paid_status: o.data.paid_status || "",
+      delivery_status: o.data.delivery_status || "",
+    }));
+    downloadCSV("linkzone-orders.csv", rows);
+    toast({ title: "Export ready", description: `${rows.length} orders exported.` });
+  };
+
   if (loading) {
     return (
       <AppLayout>
@@ -66,7 +87,27 @@ export default function Orders() {
 
   return (
     <AppLayout>
-      <PageHeader title="Orders" subtitle="Logged orders and delivery status" />
+      {readOnly && (
+        <div className="flex items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 mb-4">
+          <Lock className="w-4 h-4 mt-0.5 shrink-0 text-destructive" />
+          <p className="text-sm">Account is in read-only mode. Creating orders is paused; exporting your own data is still allowed.</p>
+        </div>
+      )}
+      {trial && (
+        <div className="flex items-start gap-3 rounded-2xl border border-accent/30 bg-accent/10 p-4 mb-4">
+          <Sparkles className="w-4 h-4 mt-0.5 shrink-0 text-accent" />
+          <p className="text-sm">Trial mode — CSV export is disabled until your first payment on day 14.</p>
+        </div>
+      )}
+      <PageHeader
+        title="Orders"
+        subtitle="Logged orders and delivery status"
+        action={
+          <Button variant="outline" onClick={exportCSV} disabled={exportBlocked} className="h-11" title={exportBlocked ? "Export is disabled during the trial" : "Export orders (CSV)"}>
+            <Download className="w-4 h-4 mr-2" /> Export
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-card rounded-2xl border border-border/60 p-5 shadow-sm">

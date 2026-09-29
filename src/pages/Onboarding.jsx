@@ -7,6 +7,7 @@ import { ArrowRight, Check, Store, Wrench, Pill, Laptop, Pencil, Box, Building2,
 import { toast } from "@/components/ui/use-toast";
 import { AuthSidePanel } from "@/components/AuthLayout";
 import { cn } from "@/lib/utils";
+import { PLANS, setupFeeFor, annualPrice, SETUP_FEE, aed } from "@/lib/plans";
 
 const INDUSTRIES = [
   { name: "FMCG distribution", icon: Store },
@@ -18,36 +19,9 @@ const INDUSTRIES = [
   { name: "Other", icon: Building2 },
 ];
 
-const PLANS = [
-  {
-    id: "starter",
-    name: "Starter",
-    price: 299,
-    seats: 3,
-    tagline: "For solo reps and small teams",
-    features: ["3 team members", "200 customers", "WhatsApp inbox", "Basic dashboard"],
-  },
-  {
-    id: "growth",
-    name: "Growth",
-    price: 699,
-    seats: 10,
-    tagline: "For growing distribution teams",
-    features: ["10 team members", "Unlimited customers", "Lead Finder", "Reorder reminders", "Per-route analytics"],
-    popular: true,
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    price: null,
-    seats: 50,
-    tagline: "For large wholesale operations",
-    features: ["50 team members", "Unlimited everything", "Advanced analytics", "Priority support", "Custom branding"],
-  },
-];
-
 const STEPS = ["Account", "Industry", "Plan"];
 const inputCls = "h-12 rounded-[10px] bg-white border-border";
+const TERMS_LINE = "Lead data is licensed for use inside your Linkzone subscription and may not be resold or redistributed.";
 
 export default function Onboarding() {
   const [step, setStep] = useState(0);
@@ -55,8 +29,14 @@ export default function Onboarding() {
   const [company, setCompany] = useState(localStorage.getItem("lz_company") || "");
   const [industry, setIndustry] = useState("");
   const [plan, setPlan] = useState("growth");
+  const [billingCycle, setBillingCycle] = useState("monthly");
   const [card, setCard] = useState({ number: "", expiry: "", cvc: "" });
   const [submitting, setSubmitting] = useState(false);
+
+  const selectedPlan = PLANS.find((p) => p.id === plan);
+  const setupFee = setupFeeFor(plan);
+  const firstMonth = selectedPlan.monthly;
+  const annual = annualPrice(firstMonth);
 
   const finish = async () => {
     setSubmitting(true);
@@ -71,15 +51,26 @@ export default function Onboarding() {
       });
       const now = new Date();
       const trialEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-      const selected = PLANS.find((p) => p.id === plan);
+      const minTermMonths = billingCycle === "annual" ? 12 : 3;
+      const minTermEnd = new Date(trialEnd.getTime() + minTermMonths * 30 * 24 * 60 * 60 * 1000);
       await base44.entities.Subscription.create({
         organization_id: org.id,
         plan,
         status: "trial",
         trial_start: now.toISOString(),
         trial_end: trialEnd.toISOString(),
-        amount: selected.price || 0,
-        seats: selected.seats,
+        amount: billingCycle === "annual" ? (annual || 0) : firstMonth || 0,
+        seats: selectedPlan.seats,
+        billing_cycle: billingCycle,
+        setup_fee: setupFee === null ? 0 : setupFee,
+        setup_fee_paid: false,
+        min_term_end: minTermEnd.toISOString(),
+        lead_limit_monthly: selectedPlan.leadLimit === null ? 0 : selectedPlan.leadLimit,
+        lead_pulls_used: 0,
+        lead_pulls_month: now.toISOString().slice(0, 7),
+        lead_pulls_trial_used: 0,
+        whatsapp_sends_used: 0,
+        whatsapp_sends_month: now.toISOString().slice(0, 7),
       });
       await base44.auth.updateMe({
         organization_id: org.id,
@@ -114,12 +105,7 @@ export default function Onboarding() {
                   >
                     {i < step ? <Check className="w-3.5 h-3.5" strokeWidth={3} /> : i + 1}
                   </div>
-                  <span
-                    className={cn(
-                      "text-sm font-600 hidden sm:inline",
-                      i === step ? "text-foreground" : "text-faint"
-                    )}
-                  >
+                  <span className={cn("text-sm font-600 hidden sm:inline", i === step ? "text-foreground" : "text-faint")}>
                     {label}
                   </span>
                 </div>
@@ -170,9 +156,7 @@ export default function Onboarding() {
                     onClick={() => setIndustry(ind.name)}
                     className={cn(
                       "flex items-center gap-3 p-4 rounded-2xl border-2 text-left transition-all",
-                      industry === ind.name
-                        ? "border-primary bg-tint"
-                        : "border-border bg-white hover:border-primary/40"
+                      industry === ind.name ? "border-primary bg-tint" : "border-border bg-white hover:border-primary/40"
                     )}
                   >
                     <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shrink-0", industry === ind.name ? "bg-primary text-white" : "bg-tint text-primary")}>
@@ -198,10 +182,28 @@ export default function Onboarding() {
               <h1 className="font-display font-extrabold text-[1.75rem] tracking-tight" style={{ letterSpacing: "-0.02em" }}>
                 Choose your plan
               </h1>
-              <p className="text-muted-foreground mt-2 mb-6">14-day free trial. No charge until day 14.</p>
+              <p className="text-muted-foreground mt-2 mb-5">14-day free trial. No charge until day 14.</p>
+
+              {/* Billing cycle toggle */}
+              <div className="flex p-1 rounded-[10px] bg-muted mb-4 w-full max-w-xs">
+                <button
+                  onClick={() => setBillingCycle("monthly")}
+                  className={cn("flex-1 h-9 rounded-[8px] text-sm font-600 transition-colors", billingCycle === "monthly" ? "bg-white text-foreground shadow-sm" : "text-faint")}
+                >
+                  Monthly
+                </button>
+                <button
+                  onClick={() => setBillingCycle("annual")}
+                  className={cn("flex-1 h-9 rounded-[8px] text-sm font-600 transition-colors flex items-center justify-center gap-1.5", billingCycle === "annual" ? "bg-white text-foreground shadow-sm" : "text-faint")}
+                >
+                  Annual <span className="text-[10px] font-700 text-success">2 months free</span>
+                </button>
+              </div>
+
               <div className="space-y-3">
                 {PLANS.map((p) => {
                   const selected = plan === p.id;
+                  const price = billingCycle === "annual" ? annualPrice(p.monthly) : p.monthly;
                   return (
                     <button
                       key={p.id}
@@ -219,8 +221,8 @@ export default function Onboarding() {
                           )}
                         </div>
                         <span className="font-display font-extrabold text-lg">
-                          {p.price ? `AED ${p.price}` : "Custom"}
-                          {p.price && <span className="text-xs text-faint font-500">/mo</span>}
+                          {price ? aed(price) : "Custom"}
+                          {price && <span className="text-xs text-faint font-500">/{billingCycle === "annual" ? "yr" : "mo"}</span>}
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground mb-2">{p.tagline}</p>
@@ -236,11 +238,28 @@ export default function Onboarding() {
                 })}
               </div>
 
+              {/* Setup fee line */}
+              <div className="flex items-center justify-between gap-2 mt-4 px-1 text-sm">
+                <span className="text-muted-foreground">
+                  One-time setup fee <span className="text-faint">(non-refundable)</span>
+                </span>
+                <span className="font-600">{setupFee === null ? "Custom" : aed(setupFee)}</span>
+              </div>
+
               {/* Green strip */}
-              <div className="flex items-center justify-between gap-2 mt-5 p-3.5 rounded-[10px] bg-success-muted">
-                <span className="text-sm font-600 text-success">Today's charge</span>
-                <span className="text-sm font-700 text-success">AED 0.00</span>
-                <span className="text-xs font-600 text-success bg-white/60 px-2 py-0.5 rounded-md">14 days free</span>
+              <div className="rounded-[10px] bg-success-muted p-3.5 mt-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-600 text-success">Today's charge</span>
+                  <span className="text-sm font-700 text-success">AED 0.00</span>
+                  <span className="text-xs font-600 text-success bg-white/60 px-2 py-0.5 rounded-md">14 days free</span>
+                </div>
+                <div className="flex items-center justify-between gap-2 pt-2 border-t border-success/20">
+                  <span className="text-xs font-600 text-success">Day 14</span>
+                  <span className="text-xs font-700 text-success">
+                    {setupFee === null ? "Custom setup" : aed(setupFee)} one-time setup
+                    {firstMonth ? ` + ${aed(firstMonth)} first month` : " + first month"}
+                  </span>
+                </div>
               </div>
 
               {/* Card fields */}
@@ -260,7 +279,7 @@ export default function Onboarding() {
                   <Input placeholder="CVC" value={card.cvc} onChange={(e) => setCard({ ...card, cvc: e.target.value })} className={inputCls} />
                 </div>
                 <p className="text-xs text-muted-foreground mt-3">
-                  On day 14 the one-time setup + first month are charged. Cancel anytime before.
+                  Your card is saved now and charged AED 0. On day 14 the one-time setup fee plus the first {billingCycle === "annual" ? "year" : "month"} are charged. Cancel anytime before.
                 </p>
               </div>
 
@@ -273,8 +292,8 @@ export default function Onboarding() {
             </div>
           )}
 
-          <p className="text-center text-xs text-faint mt-8">
-            By continuing you agree to the Linkzone terms. Cancel anytime.
+          <p className="text-center text-xs text-faint mt-6 leading-relaxed">
+            By continuing you agree to the Linkzone terms. {TERMS_LINE}
           </p>
         </div>
       </div>

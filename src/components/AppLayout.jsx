@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
+import { isReadOnly, readOnlyUntilDate } from "@/lib/planRules";
+import { format } from "date-fns";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 const NAV = [
@@ -175,6 +177,17 @@ export default function AppLayout({ children }) {
           </div>
         </header>
 
+        {isReadOnly(subscription) && (() => {
+          const until = readOnlyUntilDate(subscription);
+          return (
+            <div className="flex items-center gap-3 px-4 lg:px-8 py-2.5 bg-destructive/10 border-b border-destructive/20 text-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" />
+              <span className="text-foreground">
+                Account is read-only{until ? ` — closes on ${format(until, "dd MMM yyyy")}` : ""}. Export your data from Customers and Orders.
+              </span>
+            </div>
+          );
+        })()}
         <main className="p-4 lg:p-8 max-w-7xl mx-auto">{children}</main>
       </div>
 

@@ -43,6 +43,15 @@
       "type": "string",
       "format": "date-time"
     },
+    "source": {
+      "type": "string",
+      "enum": [
+        "lead_finder",
+        "imported",
+        "manual"
+      ],
+      "default": "manual"
+    },
     "organization_id": {
       "type": "string"
     }

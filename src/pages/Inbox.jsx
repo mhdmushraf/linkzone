@@ -7,18 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { MessageCircle, Send, Package, ShoppingCart, Plus, Trash2, Loader2, ArrowLeft, Search, ArrowRight } from "lucide-react";
+import { MessageCircle, Send, Package, ShoppingCart, Plus, Trash2, Loader2, ArrowLeft, Search, ArrowRight, Lock, Sparkles } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { Image } from "@/components/ui/image";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { isTrial, isReadOnly, canSendWhatsApp, whatsappUsedThisPeriod, canCreateOrder } from "@/lib/planRules";
+import { TRIAL_WHATSAPP_LIMIT } from "@/lib/plans";
 
 const WHATSAPP_BG = "#ECE5DD";
 const DELIVERY_OPTS = ["pending", "dispatched", "delivered"];
 const PAYMENT_OPTS = ["due", "partial", "paid"];
 
 export default function Inbox() {
-  const { organization, user } = useOrg();
+  const { organization, user, subscription } = useOrg();
   const orgId = organization?.id;
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -108,6 +110,14 @@ export default function Inbox() {
 
   const send = async (content, messageType = "text", productData = null) => {
     if (!activeId || (!content && messageType === "text")) return;
+    if (isReadOnly(subscription)) {
+      toast({ title: "Account is read-only", description: "Sending is disabled while your account is in read-only mode.", variant: "destructive" });
+      return;
+    }
+    if (!canSendWhatsApp(subscription)) {
+      toast({ title: "Trial send limit reached", description: `WhatsApp sends are capped at ${TRIAL_WHATSAPP_LIMIT} during the trial.`, variant: "destructive" });
+      return;
+    }
     setSending(true);
     try {
       await base44.entities.Message.create({
@@ -122,6 +132,14 @@ export default function Inbox() {
         last_message: content || (messageType === "product" ? "Shared a product" : ""),
         last_message_at: new Date().toISOString(),
       });
+      // Track WhatsApp send usage during the trial
+      if (isTrial(subscription)) {
+        try {
+          await base44.entities.Subscription.update(subscription.id, {
+            whatsapp_sends_used: (subscription.data.whatsapp_sends_used || 0) + 1,
+          });
+        } catch (e) { /* non-fatal */ }
+      }
       setText("");
       loadMessages(activeId);
       load();
@@ -156,6 +174,10 @@ export default function Inbox() {
 
   const createOrder = async () => {
     if (!active || orderItems.length === 0) return;
+    if (!canCreateOrder(subscription)) {
+      toast({ title: "Account is read-only", description: "Creating orders is disabled while your account is in read-only mode.", variant: "destructive" });
+      return;
+    }
     try {
       await base44.entities.Order.create({
         customer_id: active.data.customer_id,
@@ -265,6 +287,20 @@ export default function Inbox() {
 
   return (
     <AppLayout>
+      {isReadOnly(subscription) && (
+        <div className="flex items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 mb-4">
+          <Lock className="w-4 h-4 mt-0.5 shrink-0 text-destructive" />
+          <p className="text-sm">Account is in read-only mode — sending and new orders are disabled. You can still export your data from Customers and Orders.</p>
+        </div>
+      )}
+      {isTrial(subscription) && (
+        <div className="flex items-start gap-3 rounded-2xl border border-accent/30 bg-accent/10 p-4 mb-4">
+          <Sparkles className="w-4 h-4 mt-0.5 shrink-0 text-accent" />
+          <p className="text-sm">
+            Trial mode — WhatsApp sends capped at {TRIAL_WHATSAPP_LIMIT} ({whatsappUsedThisPeriod(subscription)} used). Limits lift after your first payment on day 14.
+          </p>
+        </div>
+      )}
       <div className="bg-card rounded-2xl border border-border overflow-hidden flex h-[calc(100vh-8.5rem)] lg:h-[calc(100vh-9rem)]">
         {/* Conversation list */}
         <div className={`${activeId ? "hidden sm:flex" : "flex"} flex-col w-full sm:w-80 border-r border-border shrink-0`}>

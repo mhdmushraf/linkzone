@@ -20,7 +20,8 @@
         "trial",
         "active",
         "past_due",
-        "cancelled"
+        "cancelled",
+        "read_only"
       ],
       "default": "trial"
     },
@@ -38,6 +39,55 @@
     "seats": {
       "type": "number",
       "default": 3
+    },
+    "billing_cycle": {
+      "type": "string",
+      "enum": [
+        "monthly",
+        "annual"
+      ],
+      "default": "monthly"
+    },
+    "setup_fee": {
+      "type": "number",
+      "default": 1500
+    },
+    "setup_fee_paid": {
+      "type": "boolean",
+      "default": false
+    },
+    "min_term_end": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "lead_limit_monthly": {
+      "type": "number"
+    },
+    "lead_pulls_used": {
+      "type": "number",
+      "default": 0
+    },
+    "lead_pulls_month": {
+      "type": "string"
+    },
+    "lead_pulls_trial_used": {
+      "type": "number",
+      "default": 0
+    },
+    "whatsapp_sends_used": {
+      "type": "number",
+      "default": 0
+    },
+    "whatsapp_sends_month": {
+      "type": "string"
+    },
+    "cancelled_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "read_only_until": {
+      "type": "string",
+      "format": "date-time"
     }
   },
   "required": [

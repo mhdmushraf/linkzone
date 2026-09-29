@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useOrg } from "@/lib/OrgContext";
 import AppLayout from "@/components/AppLayout";
@@ -7,14 +7,22 @@ import EmptyState from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Search, Loader2, Plus, Check, MapPin, Phone } from "lucide-react";
+import { Search, Loader2, Plus, Check, MapPin, Phone, Lock, Sparkles } from "lucide-react";
 import { findLeads } from "@/functions/findLeads";
 import { toast } from "@/components/ui/use-toast";
+import {
+  leadAllowance,
+  leadUsedThisPeriod,
+  isTrial,
+  isReadOnly,
+  canPullLeads,
+} from "@/lib/planRules";
 
 const INDUSTRIES = ["Grocery / Mini mart", "Pharmacy", "Electronics", "Hardware", "Bakery", "Beverages", "Cosmetics", "Office supplies", "Other"];
+const TERMS_LINE = "Lead data is licensed for use inside your Linkzone subscription and may not be resold or redistributed.";
 
 export default function LeadFinder() {
-  const { organization } = useOrg();
+  const { organization, subscription } = useOrg();
   const orgId = organization?.id;
   const [area, setArea] = useState("");
   const [industry, setIndustry] = useState("");
@@ -22,18 +30,39 @@ export default function LeadFinder() {
   const [leads, setLeads] = useState([]);
   const [added, setAdded] = useState(new Set());
   const [searched, setSearched] = useState(false);
+  const [usage, setUsage] = useState(null); // { allowance, used, trial } from backend
+
+  const trial = isTrial(subscription);
+  const readOnly = isReadOnly(subscription);
+  const allowance = leadAllowance(subscription);
+  const used = usage?.used ?? leadUsedThisPeriod(subscription);
+  const blocked = !canPullLeads(subscription);
+  const limitReached = allowance !== null && used >= allowance;
 
   const search = async () => {
     if (!area || !industry) return;
+    if (blocked) {
+      toast({ title: "Lead pull limit reached", description: "Upgrade your plan to pull more leads.", variant: "destructive" });
+      return;
+    }
     setLoading(true);
     setLeads([]);
     setAdded(new Set());
     setSearched(false);
     try {
       const res = await findLeads({ area, industry });
-      setLeads(res.data?.leads || []);
+      const data = res.data || {};
+      if (data.usage) setUsage(data.usage);
+      if (data.limit_reached) {
+        toast({ title: "Lead pull limit reached", description: "Upgrade your plan to pull more leads.", variant: "destructive" });
+      }
+      setLeads(data.leads || []);
     } catch (e) {
-      toast({ title: "Search failed", description: e.response?.data?.error || e.message, variant: "destructive" });
+      const msg = e.response?.data?.error || e.message;
+      if (e.response?.data?.limit_reached) {
+        setUsage({ allowance: e.response.data.allowance, used: e.response.data.allowance, trial: e.response.data.trial });
+      }
+      toast({ title: "Search failed", description: msg, variant: "destructive" });
     } finally {
       setLoading(false);
       setSearched(true);
@@ -51,6 +80,7 @@ export default function LeadFinder() {
         area: lead.area,
         industry: lead.industry,
         status: "new",
+        source: "lead_finder",
         organization_id: orgId,
       });
       setAdded((s) => new Set(s).add(i));
@@ -60,9 +90,45 @@ export default function LeadFinder() {
     }
   };
 
+  const usageLabel = useMemo(() => {
+    if (allowance === null) return `${used} lead pulls used this month · unlimited`;
+    return `${used} of ${allowance} lead pulls used ${trial ? "this trial" : "this month"}`;
+  }, [used, allowance, trial]);
+
   return (
     <AppLayout>
       <PageHeader title="Lead Finder" subtitle="Discover new businesses by area and industry" />
+
+      {/* Trial / read-only banner */}
+      {readOnly ? (
+        <Banner tone="destructive" icon={Lock}>
+          Your account is in read-only mode. Lead Finder is paused. Export is still available on the Customers and Orders pages.
+        </Banner>
+      ) : trial ? (
+        <Banner tone="amber" icon={Sparkles}>
+          Trial mode — Lead Finder is capped at {allowance} pulls total, WhatsApp sends at 100, and bulk export is disabled. Limits lift after your first payment on day 14.
+        </Banner>
+      ) : null}
+
+      {/* Usage meter */}
+      <div className="bg-card rounded-2xl border border-border/60 p-4 shadow-sm mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-600">{usageLabel}</span>
+          {limitReached && !readOnly && (
+            <Button size="sm" onClick={() => (window.location.href = "/billing")}>Upgrade plan</Button>
+          )}
+        </div>
+        {allowance !== null && (
+          <div className="h-2 rounded-full bg-muted overflow-hidden">
+            <div className={`h-full rounded-full ${limitReached ? "bg-destructive" : "bg-primary"}`} style={{ width: `${Math.min(100, (used / allowance) * 100)}%` }} />
+          </div>
+        )}
+        {limitReached && !readOnly && (
+          <p className="text-xs text-muted-foreground mt-2">
+            You've reached your {trial ? "trial" : "monthly"} limit. {trial ? "Upgrade to keep pulling leads." : "Top up by upgrading your plan."}
+          </p>
+        )}
+      </div>
 
       <div className="bg-card rounded-2xl border border-border/60 p-5 shadow-sm mb-6">
         <div className="grid sm:grid-cols-3 gap-3 items-end">
@@ -77,7 +143,7 @@ export default function LeadFinder() {
               {INDUSTRIES.map((i) => <option key={i} value={i} />)}
             </datalist>
           </div>
-          <Button onClick={search} disabled={loading || !area || !industry} className="h-11">
+          <Button onClick={search} disabled={loading || !area || !industry || blocked} className="h-11">
             {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
             {loading ? "Searching…" : "Find businesses"}
           </Button>
@@ -127,6 +193,23 @@ export default function LeadFinder() {
       ) : (
         <EmptyState icon={Search} title="Find your next customers" description="Enter an area and industry to discover new businesses to sell to." />
       )}
+
+      <p className="text-xs text-faint mt-8 text-center max-w-2xl mx-auto leading-relaxed">
+        {TERMS_LINE}
+      </p>
     </AppLayout>
+  );
+}
+
+function Banner({ tone, icon: Icon, children }) {
+  const tones = {
+    amber: "bg-accent/10 border-accent/30 text-foreground",
+    destructive: "bg-destructive/10 border-destructive/30 text-foreground",
+  };
+  return (
+    <div className={`flex items-start gap-3 rounded-2xl border p-4 mb-4 ${tones[tone]}`}>
+      <Icon className="w-4 h-4 mt-0.5 shrink-0 text-faint" />
+      <p className="text-sm">{children}</p>
+    </div>
   );
 }
