@@ -2,7 +2,7 @@
 
 Sales CRM for distributors and wholesalers: find retailers in any area, send offers on WhatsApp, and turn replies into orders.
 
-**Live:** https://linkzone-wholesale-flow.base44.app
+**Live:** https://crm.linkzoneglobal.com
 
 ## Features
 - Lead finder with map search and bulk add
